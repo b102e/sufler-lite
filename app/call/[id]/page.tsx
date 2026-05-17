@@ -234,6 +234,14 @@ export default function CallPage() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages.length, phase]);
 
+  // ── Auto-exit after 60s of inactivity in user_turn ───────────────────────
+
+  useEffect(() => {
+    if (phase !== "user_turn") return;
+    const timer = setTimeout(doEndCall, 60_000);
+    return () => clearTimeout(timer);
+  }, [phase]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // ── Handlers ──────────────────────────────────────────────────────────────
 
   function handleISaidIt(suggestion: SuggestSingle) {
