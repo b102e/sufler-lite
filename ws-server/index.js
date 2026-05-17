@@ -41,8 +41,9 @@ async function startDeepgramSession(browserSocket, sessionId, language = "it") {
   }
 
   if (deepgramSessions.has(sessionId)) {
-    // Reuse existing connection — update browser socket reference and signal ready
-    deepgramSessions.get(sessionId).browserSocket = browserSocket;
+    const session = deepgramSessions.get(sessionId);
+    session.browserSocket = browserSocket;
+    session.stopped = false; // resume forwarding transcripts
     browserSocket.send(JSON.stringify({ type: "audio:ready", sessionId }));
     console.log(`[dg] reused for ${sessionId}`);
     return;
@@ -55,7 +56,7 @@ async function startDeepgramSession(browserSocket, sessionId, language = "it") {
     return;
   }
 
-  const session = { dgSocket: null, browserSocket, pendingChunks: [] };
+  const session = { dgSocket: null, browserSocket, pendingChunks: [], stopped: false };
   deepgramSessions.set(sessionId, session);
 
   try {
@@ -81,6 +82,7 @@ async function startDeepgramSession(browserSocket, sessionId, language = "it") {
 
     dgWs.addEventListener("message", (event) => {
       try {
+        if (session.stopped) return; // grace period — don't forward stale transcripts
         const data = JSON.parse(event.data.toString());
         if (data.type === "Results") {
           const text = data.channel?.alternatives?.[0]?.transcript ?? "";
@@ -133,6 +135,9 @@ function stopDeepgramSession(sessionId, immediate = false) {
     console.log(`[dg] stopped (immediate) for ${sessionId}`);
     return;
   }
+
+  // Stop forwarding transcripts immediately
+  session.stopped = true;
 
   // Grace period — keep connection alive, close later
   if (!dgCloseTimers.has(sessionId)) {

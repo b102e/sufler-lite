@@ -274,6 +274,7 @@ export default function CallPage() {
         fetchTranslation(counterpartId, lastFinalTextRef.current);
       } else {
         // Partial: show accumulated finals + current growing partial
+        if (text.trim()) setHasFinalText(true); // unlock button on first word
         setMessages(prev => prev.map(m => {
           if (m.id !== counterpartId) return m;
           const base = lastFinalTextRef.current;
