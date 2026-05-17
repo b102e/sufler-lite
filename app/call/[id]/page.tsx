@@ -94,12 +94,19 @@ export default function CallPage() {
   const currentHeardTextRef  = useRef("");   // heard text for current generating/regenerate cycle
   const currentUserMsgIdRef  = useRef("");   // ID of the current right-side bubble
   const translateAbortRef    = useRef<AbortController | null>(null);
+  const autoStopTimerRef     = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const silenceTimerRef      = useRef<ReturnType<typeof setTimeout> | null>(null);
   const openingFetchedRef    = useRef(false);
   const bottomRef            = useRef<HTMLDivElement>(null);
 
   function updatePhase(p: Phase) {
     phaseRef.current = p;
     setPhase(p);
+  }
+
+  function clearListeningTimers() {
+    if (autoStopTimerRef.current) { clearTimeout(autoStopTimerRef.current); autoStopTimerRef.current = null; }
+    if (silenceTimerRef.current)  { clearTimeout(silenceTimerRef.current);  silenceTimerRef.current  = null; }
   }
 
   async function fetchTranslation(msgId: string, text: string) {
@@ -253,18 +260,48 @@ export default function CallPage() {
     setMessages(prev => [...prev, { id: counterpartId, kind: "counterpart", text: "", isLive: true }]);
     updatePhase("listening");
 
+    // Reset silence timer on any speech activity
+    function resetSilenceTimer() {
+      if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+      silenceTimerRef.current = setTimeout(() => {
+        if (phaseRef.current !== "listening") return;
+        clearListeningTimers();
+        stopListening();
+        setHasFinalText(false);
+        lastFinalTextRef.current = "";
+        // Remove empty counterpart bubble
+        setMessages(prev => {
+          const last = prev[prev.length - 1];
+          if (last?.kind === "counterpart" && !(last as CounterpartMsg).text.trim()) {
+            return prev.slice(0, -1);
+          }
+          return prev;
+        });
+        setMessages(prev => [...prev, {
+          id: uid(), kind: "system",
+          text: "Собеседник молчит. Нажмите «Я это сказал» чтобы повторить фразу.",
+        } as SystemMsg]);
+        updatePhase("user_turn");
+      }, 10_000);
+    }
+    resetSilenceTimer();
+
+    // Auto-stop after 30 seconds — send whatever was captured
+    autoStopTimerRef.current = setTimeout(() => {
+      if (phaseRef.current === "listening") handleHeStopped();
+    }, 30_000);
+
     startListening((text, isFinal) => {
       if (isFinal) {
         if (!text.trim()) return;
-        // Accumulate finals — Deepgram splits one utterance into multiple finals by pause
         lastFinalTextRef.current = lastFinalTextRef.current
           ? lastFinalTextRef.current + " " + text
           : text;
         setHasFinalText(true);
+        resetSilenceTimer(); // counterpart still talking, reset 10s timer
         setMessages(prev => prev.map(m => {
           if (m.id !== counterpartId) return m;
           const existing = (m as CounterpartMsg).text;
-          // isLive=false shows accumulated finals only (no trailing partial)
           return {
             ...m as CounterpartMsg,
             text: existing ? existing + " " + text : text,
@@ -273,8 +310,10 @@ export default function CallPage() {
         }));
         fetchTranslation(counterpartId, lastFinalTextRef.current);
       } else {
-        // Partial: show accumulated finals + current growing partial
-        if (text.trim()) setHasFinalText(true); // unlock button on first word
+        if (text.trim()) {
+          setHasFinalText(true);
+          resetSilenceTimer(); // reset on any partial word
+        }
         setMessages(prev => prev.map(m => {
           if (m.id !== counterpartId) return m;
           const base = lastFinalTextRef.current;
@@ -289,6 +328,7 @@ export default function CallPage() {
   }
 
   function handleHeStopped() {
+    clearListeningTimers();
     stopListening();
     const heardText = lastFinalTextRef.current;
     currentHeardTextRef.current = heardText;
@@ -334,7 +374,7 @@ export default function CallPage() {
   }
 
   function handleUrgentExit() {
-    // Stop mic immediately
+    clearListeningTimers();
     stopListening();
     lastFinalTextRef.current = "";
     setHasFinalText(false);
@@ -360,6 +400,7 @@ export default function CallPage() {
   }
 
   function doEndCall() {
+    clearListeningTimers();
     stopListening();
     sendSessionEnd();
     const endedAt = new Date().toISOString();
