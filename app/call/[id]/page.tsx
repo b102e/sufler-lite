@@ -253,6 +253,13 @@ export default function CallPage() {
       return;
     }
 
+    // Remove any trailing "silence" system messages before starting new listening cycle
+    setMessages(prev => {
+      let i = prev.length - 1;
+      while (i >= 0 && prev[i].kind === "system") i--;
+      return i < prev.length - 1 ? prev.slice(0, i + 1) : prev;
+    });
+
     // Add live counterpart bubble and start mic
     const counterpartId = uid();
     lastFinalTextRef.current = "";
