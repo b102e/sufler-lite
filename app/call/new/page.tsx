@@ -30,6 +30,7 @@ export default function NewCallPage() {
   function handleClarificationComplete(profile: CallProfile) {
     const extraDetails = [profile.required_identity, profile.important_numbers, profile.notes]
       .filter(Boolean)
+      .map(v => (typeof v === "string" ? v : JSON.stringify(v)))
       .join("\n");
     setPrepData((prev) => ({
       ...prev,

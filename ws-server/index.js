@@ -28,10 +28,23 @@ function readDeepgramKey() {
 
 // sessionId → { dgSocket, browserSocket, pendingChunks }
 const deepgramSessions = new Map();
+// sessionId → close timer (grace period after audio:stop)
+const dgCloseTimers = new Map();
+
+const DG_GRACE_MS = 8000; // keep Deepgram alive 8s after audio:stop
 
 async function startDeepgramSession(browserSocket, sessionId, language = "it") {
+  // Cancel any pending grace-period close
+  if (dgCloseTimers.has(sessionId)) {
+    clearTimeout(dgCloseTimers.get(sessionId));
+    dgCloseTimers.delete(sessionId);
+  }
+
   if (deepgramSessions.has(sessionId)) {
+    // Reuse existing connection — update browser socket reference and signal ready
+    deepgramSessions.get(sessionId).browserSocket = browserSocket;
     browserSocket.send(JSON.stringify({ type: "audio:ready", sessionId }));
+    console.log(`[dg] reused for ${sessionId}`);
     return;
   }
 
@@ -108,12 +121,33 @@ function sendAudioBinary(sessionId, buffer) {
   }
 }
 
-function stopDeepgramSession(sessionId) {
+function stopDeepgramSession(sessionId, immediate = false) {
   const session = deepgramSessions.get(sessionId);
   if (!session) return;
-  try { session.dgSocket?.close(); } catch { /* ignore */ }
-  deepgramSessions.delete(sessionId);
-  console.log(`[dg] stopped for ${sessionId}`);
+
+  if (immediate) {
+    clearTimeout(dgCloseTimers.get(sessionId));
+    dgCloseTimers.delete(sessionId);
+    try { session.dgSocket?.close(); } catch { /* ignore */ }
+    deepgramSessions.delete(sessionId);
+    console.log(`[dg] stopped (immediate) for ${sessionId}`);
+    return;
+  }
+
+  // Grace period — keep connection alive, close later
+  if (!dgCloseTimers.has(sessionId)) {
+    const timer = setTimeout(() => {
+      const s = deepgramSessions.get(sessionId);
+      if (s) {
+        try { s.dgSocket?.close(); } catch { /* ignore */ }
+        deepgramSessions.delete(sessionId);
+      }
+      dgCloseTimers.delete(sessionId);
+      console.log(`[dg] closed after grace for ${sessionId}`);
+    }, DG_GRACE_MS);
+    dgCloseTimers.set(sessionId, timer);
+    console.log(`[dg] grace period started for ${sessionId}`);
+  }
 }
 
 // ─── WebSocket Server ─────────────────────────────────────────────────────────
@@ -175,7 +209,7 @@ wss.on("connection", (socket, req) => {
 
       case "session:end":
         if (!isValidSessionId(sessionId)) break;
-        stopDeepgramSession(sessionId);
+        stopDeepgramSession(sessionId, true); // immediate on session end
         socket.sessionId = null;
         console.log(`[ws] session:end ${sessionId}`);
         socket.send(JSON.stringify({ type: "session:closed", sessionId }));
