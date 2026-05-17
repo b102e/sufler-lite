@@ -52,6 +52,19 @@ const EXIT_OPTIONS: SuggestSingle[] = [
 const SYSTEM_HINT = "Положите телефон рядом с микрофоном суфлёра. Говорите в телефон — суфлёр запишет собеседника.";
 const MAX_TRANSCRIPT = 8;
 
+const FILLER_PHRASES = [
+  { it: "Allora...",      ru: "Так..." },
+  { it: "Un momento...", ru: "Одну секунду..." },
+  { it: "Sì, sì...",     ru: "Да, да..." },
+  { it: "Capisco...",    ru: "Понимаю..." },
+  { it: "Mmm...",        ru: "Мм..." },
+  { it: "Certo...",      ru: "Конечно..." },
+  { it: "Perfetto...",   ru: "Отлично..." },
+  { it: "Va bene...",    ru: "Хорошо..." },
+  { it: "Esatto...",     ru: "Именно..." },
+  { it: "Dunque...",     ru: "Итак..." },
+];
+
 const uid = () => crypto.randomUUID();
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -84,6 +97,7 @@ export default function CallPage() {
   ]);
   const [exitPending, setExitPending] = useState(false);
   const [hasFinalText, setHasFinalText] = useState(false);
+  const [currentFiller, setCurrentFiller] = useState<{ it: string; ru: string } | null>(null);
   const [translations, setTranslations] = useState<Record<string, string>>({});
 
   const phaseRef             = useRef<Phase>("idle");
@@ -153,6 +167,22 @@ export default function CallPage() {
       prep.notes ?? prep.details,
     ].filter(Boolean).join(" | ");
 
+    // Filler phrase: show after 800ms if Claude hasn't responded yet
+    let fillerShown = false;
+    const fillerTimer = setTimeout(() => {
+      fillerShown = true;
+      setCurrentFiller(FILLER_PHRASES[Math.floor(Math.random() * FILLER_PHRASES.length)]);
+    }, 800);
+
+    const clearFiller = () => {
+      clearTimeout(fillerTimer);
+      if (fillerShown) {
+        setTimeout(() => setCurrentFiller(null), 200);
+      } else {
+        setCurrentFiller(null);
+      }
+    };
+
     try {
       const res = await fetch("/api/suggest", {
         method: "POST",
@@ -198,8 +228,10 @@ export default function CallPage() {
           m.id === msgId ? { ...m as UserMsg, suggestion: SUGGEST_FALLBACK } : m
         ));
       }
+      clearFiller();
       return partial.italian ? partial : SUGGEST_FALLBACK;
     } catch {
+      clearFiller();
       setMessages(prev => prev.map(m =>
         m.id === msgId ? { ...m as UserMsg, suggestion: SUGGEST_FALLBACK } : m
       ));
@@ -638,6 +670,15 @@ export default function CallPage() {
             </div>
           );
         })}
+
+        {/* Filler phrase while Claude is generating */}
+        {phase === "generating" && currentFiller && (
+          <div className="rounded-xl border border-zinc-800 bg-zinc-900/60 px-4 py-3 anim-slide-up">
+            <p className="text-[11px] uppercase tracking-widest text-zinc-600 mb-1">Скажите пока:</p>
+            <p className="text-[18px] font-semibold text-blue-400 leading-snug">{currentFiller.it}</p>
+            <p className="text-[13px] italic text-zinc-500 mt-0.5">{currentFiller.ru}</p>
+          </div>
+        )}
 
         {/* Listening controls — two buttons */}
         {phase === "listening" && (
