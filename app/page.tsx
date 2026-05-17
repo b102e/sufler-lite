@@ -1,0 +1,256 @@
+"use client";
+
+import { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
+import { transitionTo } from "@/lib/transition";
+import { downloadTranscript, formatDateTime, type ChosenOption, type SessionForTranscript } from "@/lib/transcript";
+
+type ResultData = {
+  sessionId: string;
+  organization: string | null;
+  goal: string | null;
+  startedAt: string;
+  endedAt: string;
+  chosenOptions: ChosenOption[];
+};
+
+
+const HOW_STEPS = [
+  "Подготовьте информацию о звонке с помощью ИИ",
+  "Позвоните с другого устройства",
+  "Включите громкую связь и положите телефон рядом",
+  "Суфлер слушает и подсказывает фразы в реальном времени",
+];
+
+function HowItWorksModal({ onClose }: { onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-50 flex flex-col justify-end bg-black/70" onClick={onClose}>
+      <div
+        className="mx-auto w-full max-w-md bg-zinc-900 rounded-t-3xl px-6 pt-6 pb-10"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="w-8 h-1 bg-zinc-700 rounded-full mx-auto mb-6" />
+        <h2 className="text-lg font-semibold text-zinc-100 mb-6">Как это работает</h2>
+
+        <ol className="space-y-4 mb-8">
+          {HOW_STEPS.map((step, i) => (
+            <li key={i} className="flex gap-3 items-start">
+              <span className="shrink-0 w-6 h-6 rounded-full border border-zinc-600 text-xs text-zinc-400 flex items-center justify-center mt-0.5">
+                {i + 1}
+              </span>
+              <span className="text-sm text-zinc-300 leading-relaxed">{step}</span>
+            </li>
+          ))}
+        </ol>
+
+        <button
+          type="button"
+          onClick={onClose}
+          className="w-full h-14 rounded-2xl bg-zinc-100 text-base font-semibold text-zinc-900 transition active:scale-[0.99]"
+        >
+          Понятно
+        </button>
+      </div>
+    </div>
+  );
+}
+
+const LANGUAGES = [
+  { flag: "🇮🇹", name: "Итальянский", active: true },
+  { flag: "🇪🇸", name: "Испанский",     active: false },
+  { flag: "🇫🇷", name: "Французский",   active: false },
+  { flag: "🇩🇪", name: "Немецкий",      active: false },
+  { flag: "🇬🇧", name: "Английский",    active: false },
+  { flag: "🇵🇹", name: "Португальский", active: false },
+  { flag: "🇳🇱", name: "Нидерландский", active: false },
+  { flag: "🇵🇱", name: "Польский",      active: false },
+  { flag: "🇨🇿", name: "Чешский",       active: false },
+  { flag: "🇷🇴", name: "Румынский",     active: false },
+  { flag: "🇬🇷", name: "Греческий",     active: false },
+  { flag: "🇹🇷", name: "Турецкий",      active: false },
+  { flag: "🇸🇦", name: "Арабский",      active: false },
+  { flag: "🇯🇵", name: "Японский",      active: false },
+  { flag: "🇰🇷", name: "Корейский",     active: false },
+  { flag: "🇨🇳", name: "Китайский",     active: false },
+  { flag: "🇮🇳", name: "Хинди",         active: false },
+  { flag: "🇸🇪", name: "Шведский",      active: false },
+  { flag: "🇺🇦", name: "Украинский",    active: false },
+  { flag: "🇫🇮", name: "Финский",       active: false },
+];
+
+export default function HomePage() {
+  const router = useRouter();
+  const [result, setResult] = useState<ResultData | null>(null);
+  const [showHow, setShowHow] = useState(false);
+  const [showLangs, setShowLangs] = useState(false);
+  const [toast, setToast] = useState(false);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function showToast() {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    setToast(true);
+    toastTimerRef.current = setTimeout(() => setToast(false), 1500);
+  }
+
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem("sufler:result");
+      if (raw) {
+        sessionStorage.removeItem("sufler:result"); // delete immediately — refresh shows clean state
+        setResult(JSON.parse(raw));
+      }
+    } catch { /* ignore */ }
+  }, []);
+
+  function handleDownload() {
+    if (!result) return;
+    const session: SessionForTranscript = {
+      id: result.sessionId,
+      startedAt: result.startedAt,
+      endedAt: result.endedAt,
+      status: "completed",
+      taskContext: [result.organization, result.goal].filter(Boolean).join(" — ") || null,
+      createdAt: result.startedAt,
+      chosenOptions: result.chosenOptions,
+    };
+    downloadTranscript(session);
+  }
+
+  if (result) {
+    return (
+      <main className="mx-auto flex h-screen w-full max-w-md flex-col px-4 pt-8 pb-6 overflow-hidden">
+
+        <header className="shrink-0 mb-4">
+          <p className="text-xs uppercase tracking-widest text-zinc-500">Суфлер</p>
+          <h1 className="mt-1 text-xl font-semibold text-zinc-100">
+            {result.organization || "Звонок завершён"}
+          </h1>
+          {result.goal && (
+            <p className="mt-0.5 text-sm text-zinc-500 line-clamp-1">{result.goal}</p>
+          )}
+        </header>
+
+        {/* Session card — grows to fill available space */}
+        <article className="flex-1 min-h-0 flex flex-col rounded-2xl border border-zinc-800 bg-zinc-900/70 p-5 mb-4">
+          <div className="flex items-center justify-between mb-4 shrink-0">
+            <p className="text-xs uppercase tracking-widest text-zinc-600">Разговор</p>
+            <span className="text-xs text-zinc-600">{formatDateTime(result.startedAt)}</span>
+          </div>
+
+          {/* Scrollable transcript */}
+          <div className="flex-1 min-h-0 overflow-y-auto">
+            {result.chosenOptions.length === 0 ? (
+              <p className="text-sm text-zinc-600 italic">(Реплики не выбраны)</p>
+            ) : (
+              <div className="space-y-0 pb-2">
+                {result.chosenOptions.map((opt, i) => (
+                  <div
+                    key={i}
+                    className={`border-l-2 pl-3 pb-3 mb-3 border-b border-zinc-800 last:border-b-0 last:mb-0 anim-fade-up ${opt.speaker === "counterpart" ? "border-l-zinc-600" : "border-l-zinc-500"}`}
+                    style={{ animationDelay: `${Math.min(i * 60, 500)}ms` }}
+                  >
+                    <p className={`text-[11px] uppercase tracking-wide font-medium mb-0.5 ${opt.speaker === "counterpart" ? "text-gray-500" : "text-blue-400"}`}>
+                      {opt.speaker === "counterpart" ? "Собеседник" : "Вы"}
+                    </p>
+                    <p className="text-sm text-zinc-200 leading-relaxed">{opt.optionText}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="shrink-0 mt-4 border-t border-zinc-800 pt-4">
+            <button
+              type="button"
+              onClick={handleDownload}
+              className="w-full h-10 rounded-xl border border-zinc-700 text-xs font-medium text-zinc-300 transition-all duration-150 active:scale-[0.99] hover:scale-[1.01] hover:border-zinc-500 hover:bg-zinc-800/50 anim-fade-up"
+            style={{ animationDelay: `${Math.min(result.chosenOptions.length * 60 + 100, 600)}ms` }}
+            >
+              Скачать транскрипт
+            </button>
+          </div>
+        </article>
+
+        <button
+          type="button"
+          onClick={() => setResult(null)}
+          className="shrink-0 flex h-14 w-full items-center justify-center rounded-xl bg-zinc-100 text-base font-semibold text-zinc-900 transition active:scale-[0.99]"
+        >
+          Выйти
+        </button>
+
+      </main>
+    );
+  }
+
+  // ── Start screen ───────────────────────────────────────────────────────────
+
+  return (
+    <>
+      <main className="mx-auto flex min-h-screen w-full max-w-md flex-col items-center justify-center px-4">
+        <button
+          type="button"
+          onClick={() => transitionTo(() => router.push("/call/new"))}
+          className="anim-fade-up flex h-14 w-full items-center justify-center gap-2 rounded-xl bg-zinc-100 text-base font-semibold text-zinc-900 transition-all duration-150 hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(255,255,255,0.05)] active:scale-[0.98]"
+        >
+          Суфлер
+          <span className="text-lg">→</span>
+        </button>
+        <p className="mt-3 text-[14px] text-gray-500 anim-fade-up" style={{ animationDelay: "150ms" }}>Суфлёр на искусственном интеллекте</p>
+        <button
+          type="button"
+          onClick={() => setShowHow(true)}
+          className="mt-4 text-sm text-zinc-600 hover:text-zinc-400 transition"
+        >
+          Как это работает?
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setShowLangs(v => !v)}
+          className="mt-3 text-[13px] text-gray-500 hover:text-gray-300 transition-colors duration-200 cursor-pointer"
+        >
+          Доступные языки →
+        </button>
+
+        {/* Inline language expand */}
+        <div className={`overflow-hidden transition-all duration-300 ease-out ${showLangs ? "max-h-96 opacity-100 mt-4" : "max-h-0 opacity-0 mt-0"}`}>
+          <div className="flex flex-wrap gap-3 justify-center" style={{ maxWidth: 320, margin: "0 auto" }}>
+            {LANGUAGES.map((lang) => (
+              <button
+                key={lang.name}
+                type="button"
+                onClick={() => {
+                  if (lang.active) { setShowLangs(false); return; }
+                  showToast();
+                }}
+                className="flex flex-col items-center gap-0.5"
+                style={{
+                  opacity: lang.active ? 1 : 0.3,
+                  filter: lang.active ? "none" : "grayscale(100%)",
+                }}
+              >
+                <span className={`text-2xl ${lang.active ? "border-b-2 border-blue-500 pb-0.5" : ""}`}>
+                  {lang.flag}
+                </span>
+                <span className={`text-[10px] ${lang.active ? "text-gray-300" : "text-gray-600"}`}>
+                  {lang.name}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+      </main>
+
+      {/* Toast */}
+      <div className={`fixed bottom-8 left-1/2 -translate-x-1/2 z-50 transition-all duration-300 ${toast ? "opacity-100 translate-y-0" : "opacity-0 translate-y-5 pointer-events-none"}`}>
+        <div className="bg-zinc-800 text-gray-300 rounded-lg px-4 py-2 text-sm whitespace-nowrap">
+          Пока недоступен
+        </div>
+      </div>
+
+      {showHow && <HowItWorksModal onClose={() => setShowHow(false)} />}
+    </>
+  );
+}

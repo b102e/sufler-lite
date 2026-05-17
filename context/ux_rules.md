@@ -1,0 +1,23 @@
+# UX Rules — Суфлер Lite
+
+- Dark theme is the default and only theme.
+- All user-visible text must be in Russian.
+- Generated call responses are in Italian (with Russian translation shown below).
+- No emojis anywhere in the interface.
+- No English visible to end users.
+- Large tap targets — minimum 44px height for interactive elements.
+- One-thumb usability on mobile.
+- Max 2 lines of text per response card.
+- Italian phrase = primary text (larger, zinc-100).
+- Russian translation = secondary text (smaller, zinc-400), separated by a divider line.
+- Transcript area is visually secondary to suggestion buttons.
+- Suggestion buttons are the primary action surface.
+- Response cards disappear immediately after tap — no persistent selection state.
+- Skeleton animation during AI generation (no blank screen).
+- Listening indicator = pulsing red dot + "Слушаю собеседника..."
+- Partial transcript shown in italic gray inside transcript panel.
+- "Готово" button is the only way to stop listening — no auto-stop.
+- Bottom controls (Без звука / Повторить / Закончить) appear only after first response is selected.
+- Pre-call modal (instruction sheet) shown once per session mount — bottom sheet style.
+- Empty history → centered empty state with CTA button only (no sticky bottom bar).
+- History with calls → sticky bottom "Подготовить звонок" CTA only (no empty state shown).

@@ -1,0 +1,71 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+}
+
+/* ── Animation keyframes ───────────────────────────────────────────────────── */
+
+@keyframes fade-slide-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0);   }
+}
+
+@keyframes bubble-left {
+  from { opacity: 0; transform: translateX(-6px); }
+  to   { opacity: 1; transform: translateX(0);    }
+}
+
+@keyframes bubble-right {
+  from { opacity: 0; transform: translateX(6px) scale(0.98); }
+  to   { opacity: 1; transform: translateX(0)   scale(1);    }
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0);    }
+}
+
+@keyframes page-enter {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0);   }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   `both` fill-mode: applies `from` during delay (prevents flash before start)
+   and holds `to` after completion.
+   ───────────────────────────────────────────────────────────────────────── */
+
+.anim-fade-up      { animation: fade-slide-up 480ms ease-out both; will-change: opacity, transform; }
+.anim-fade-up-fast { animation: fade-slide-up 200ms ease-out both; will-change: opacity, transform; }
+.anim-bubble-l     { animation: bubble-left   280ms ease-out both; will-change: opacity, transform; }
+.anim-bubble-r     { animation: bubble-right  320ms ease-out both; will-change: opacity, transform; }
+.anim-slide-up     { animation: slide-up      260ms ease-out both; will-change: opacity, transform; }
+.anim-page         { animation: page-enter    280ms ease-out both; will-change: opacity, transform; }
+
+/* ── View Transitions (Chrome 111+, Safari 18+) ─────────────────────────── */
+
+@keyframes vt-fade-out {
+  to { opacity: 0; }
+}
+
+@keyframes vt-fade-in {
+  from { opacity: 0; }
+}
+
+::view-transition-old(root) {
+  animation: 150ms ease-in both vt-fade-out;
+}
+
+::view-transition-new(root) {
+  animation: 250ms ease-out both vt-fade-in;
+}

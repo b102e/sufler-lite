@@ -1,0 +1,651 @@
+"use client";
+
+import { useState, useRef, useEffect, useCallback } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { useCallSession } from "@/hooks/useCallSession";
+import type { ChosenOption } from "@/lib/transcript";
+import { SUGGEST_FALLBACK, type SuggestSingle, type HistoryEntry } from "@/lib/call-suggest";
+import { transitionTo } from "@/lib/transition";
+import TypingDots from "@/components/common/TypingDots";
+
+// ── Types ────────────────────────────────────────────────────────────────────
+
+type Phase = "idle" | "user_turn" | "listening" | "generating" | "exit_options";
+
+type SystemMsg      = { id: string; kind: "system";      text: string };
+type CounterpartMsg = { id: string; kind: "counterpart"; text: string; isLive: boolean };
+type UserMsg        = { id: string; kind: "user";        suggestion: SuggestSingle | null };
+type ChatMsg = SystemMsg | CounterpartMsg | UserMsg;
+
+type PrepSession = {
+  name?: string; organization?: string; goal?: string; details?: string;
+  caller_name?: string; call_goal?: string; required_identity?: string;
+  important_numbers?: string; notes?: string;
+};
+
+// ── Hardcoded instant phrases ─────────────────────────────────────────────────
+
+const DIDNT_HEAR: SuggestSingle = {
+  russian: "Извините, не расслышал — можете повторить?",
+  italian: "Scusi, non ho capito — può ripetere?",
+  translit: "Скузи, нон о капито — пуо репетере?",
+};
+
+const EXIT_OPTIONS: SuggestSingle[] = [
+  {
+    russian: "Извините, у меня срочный звонок — перезвоню позже",
+    italian: "Mi scusi, ho una chiamata urgente — la richiamo",
+    translit: "Ми скузи, о уна кьямата урдженте — ла рикьямо",
+  },
+  {
+    russian: "Извините, сейчас не могу говорить — перезвоню",
+    italian: "Scusi, non posso parlare adesso — la richiamo",
+    translit: "Скузи, нон поссо парларе адессо — ла рикьямо",
+  },
+  {
+    russian: "Хорошо, спасибо — я перезвоню позже",
+    italian: "Grazie, la richiamo più tardi",
+    translit: "Грацие, ла рикьямо пью тарди",
+  },
+];
+
+const SYSTEM_HINT = "Положите телефон рядом с микрофоном суфлёра. Говорите в телефон — суфлёр запишет собеседника.";
+const MAX_TRANSCRIPT = 8;
+
+const uid = () => crypto.randomUUID();
+
+// ── Component ─────────────────────────────────────────────────────────────────
+
+export default function CallPage() {
+  const params  = useParams<{ id: string }>();
+  const router  = useRouter();
+  const sessionId = useRef(params.id).current;
+
+  // Load prepSession synchronously before any effects
+  const [prepSession] = useState<PrepSession>(() => {
+    try {
+      if (typeof window === "undefined") return {};
+      const raw = sessionStorage.getItem(`session:${params.id}`);
+      return raw ? JSON.parse(raw) : {};
+    } catch { return {}; }
+  });
+  const prepSessionRef = useRef(prepSession);
+  prepSessionRef.current = prepSession;
+
+  const [showModal, setShowModal] = useState(true);
+  const [showReadModal, setShowReadModal] = useState(false);
+  const [readMode, setReadMode] = useState<"translit" | "italian">(() => {
+    try { return (sessionStorage.getItem("sufler:readMode") as "translit" | "italian") ?? "italian"; }
+    catch { return "italian"; }
+  });
+  const [phase, setPhase] = useState<Phase>("idle");
+  const [messages, setMessages] = useState<ChatMsg[]>([
+    { id: "sys-0", kind: "system", text: SYSTEM_HINT },
+  ]);
+  const [exitPending, setExitPending] = useState(false);
+  const [hasFinalText, setHasFinalText] = useState(false);
+  const [translations, setTranslations] = useState<Record<string, string>>({});
+
+  const phaseRef             = useRef<Phase>("idle");
+  const transcriptRef        = useRef<HistoryEntry[]>([]);
+  const startedAtRef         = useRef(new Date().toISOString());
+  const chosenOptionsRef     = useRef<ChosenOption[]>([]);
+  const lastFinalTextRef     = useRef("");   // accumulated transcript:finals during listening
+  const currentHeardTextRef  = useRef("");   // heard text for current generating/regenerate cycle
+  const currentUserMsgIdRef  = useRef("");   // ID of the current right-side bubble
+  const translateAbortRef    = useRef<AbortController | null>(null);
+  const openingFetchedRef    = useRef(false);
+  const bottomRef            = useRef<HTMLDivElement>(null);
+
+  function updatePhase(p: Phase) {
+    phaseRef.current = p;
+    setPhase(p);
+  }
+
+  async function fetchTranslation(msgId: string, text: string) {
+    translateAbortRef.current?.abort();
+    const controller = new AbortController();
+    translateAbortRef.current = controller;
+
+    setTranslations(prev => ({ ...prev, [msgId]: "..." }));
+    try {
+      const res = await fetch("/api/translate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text }),
+        signal: controller.signal,
+      });
+      const data = await res.json();
+      if (!controller.signal.aborted) {
+        setTranslations(prev => ({ ...prev, [msgId]: data.translation ?? "" }));
+      }
+    } catch (e) {
+      if (e instanceof Error && e.name !== "AbortError") {
+        setTranslations(prev => ({ ...prev, [msgId]: "" }));
+      }
+    }
+  }
+
+  const { startListening, stopListening, sendOptionChosen, sendSessionEnd } =
+    useCallSession(sessionId);
+
+  // ── API helper ────────────────────────────────────────────────────────────
+
+  const callSuggestAPI = useCallback(async (
+    heardText: string | null,
+    msgId: string,
+    regenerate = false,
+  ): Promise<SuggestSingle> => {
+    const prep = prepSessionRef.current;
+    const callContext = [
+      prep.caller_name ?? prep.name,
+      prep.organization,
+      prep.call_goal ?? prep.goal,
+      prep.required_identity,
+      prep.important_numbers,
+      prep.notes ?? prep.details,
+    ].filter(Boolean).join(" | ");
+
+    try {
+      const res = await fetch("/api/suggest", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          heard_text: heardText,
+          call_context: callContext,
+          history: transcriptRef.current.slice(-MAX_TRANSCRIPT),
+          regenerate,
+        }),
+      });
+
+      if (!res.body) return SUGGEST_FALLBACK;
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let partial: SuggestSingle = { italian: "", russian: "", translit: "", is_farewell: false };
+      let lastKey = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+
+        const italian  = buffer.match(/^ITALIAN: (.+)$/m)?.[1]?.trim()  ?? partial.italian;
+        const russian  = buffer.match(/^RUSSIAN: (.+)$/m)?.[1]?.trim()  ?? partial.russian;
+        const translit = buffer.match(/^TRANSLIT: (.+)$/m)?.[1]?.trim() ?? partial.translit;
+        const farewell = buffer.match(/^FAREWELL: (true|false)$/m)?.[1] === "true";
+
+        const key = `${italian}|${russian}|${translit}`;
+        if (key !== lastKey && italian) {
+          partial = { italian, russian, translit, is_farewell: farewell };
+          lastKey = key;
+          setMessages(prev => prev.map(m =>
+            m.id === msgId ? { ...m as UserMsg, suggestion: { ...partial } } : m
+          ));
+        }
+      }
+
+      if (!partial.italian) {
+        setMessages(prev => prev.map(m =>
+          m.id === msgId ? { ...m as UserMsg, suggestion: SUGGEST_FALLBACK } : m
+        ));
+      }
+      return partial.italian ? partial : SUGGEST_FALLBACK;
+    } catch {
+      setMessages(prev => prev.map(m =>
+        m.id === msgId ? { ...m as UserMsg, suggestion: SUGGEST_FALLBACK } : m
+      ));
+      return SUGGEST_FALLBACK;
+    }
+  }, []);
+
+  // ── Modal dismiss → fetch opening suggestion ──────────────────────────────
+
+  function handleModalDismiss() {
+    setShowModal(false);
+    setShowReadModal(true);
+  }
+
+  function handleReadModeSelect(mode: "translit" | "italian") {
+    setReadMode(mode);
+    try { sessionStorage.setItem("sufler:readMode", mode); } catch { /* ignore */ }
+    setShowReadModal(false);
+    if (openingFetchedRef.current) return;
+    openingFetchedRef.current = true;
+
+    const msgId = uid();
+    currentUserMsgIdRef.current = msgId;
+    setMessages(prev => [...prev, { id: msgId, kind: "user", suggestion: null }]);
+
+    callSuggestAPI(null, msgId, false).then(() => updatePhase("user_turn"));
+  }
+
+  // ── Auto-scroll on new message or phase change ────────────────────────────
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages.length, phase]);
+
+  // ── Handlers ──────────────────────────────────────────────────────────────
+
+  function handleISaidIt(suggestion: SuggestSingle) {
+    const opt: ChosenOption = {
+      speaker: "user",
+      optionText: suggestion.italian,
+      optionIndex: chosenOptionsRef.current.length,
+      chosenAt: new Date().toISOString(),
+    };
+    chosenOptionsRef.current.push(opt);
+    sendOptionChosen(suggestion.italian, opt.optionIndex);
+    transcriptRef.current = [...transcriptRef.current, { role: "user", text: suggestion.italian }];
+
+    // Auto-end on farewell phrase or explicit exit
+    if (suggestion.is_farewell || exitPending) {
+      doEndCall();
+      return;
+    }
+
+    // Add live counterpart bubble and start mic
+    const counterpartId = uid();
+    lastFinalTextRef.current = "";
+    setHasFinalText(false);
+    setMessages(prev => [...prev, { id: counterpartId, kind: "counterpart", text: "", isLive: true }]);
+    updatePhase("listening");
+
+    startListening((text, isFinal) => {
+      if (isFinal) {
+        if (!text.trim()) return;
+        // Accumulate finals — Deepgram splits one utterance into multiple finals by pause
+        lastFinalTextRef.current = lastFinalTextRef.current
+          ? lastFinalTextRef.current + " " + text
+          : text;
+        setHasFinalText(true);
+        setMessages(prev => prev.map(m => {
+          if (m.id !== counterpartId) return m;
+          const existing = (m as CounterpartMsg).text;
+          // isLive=false shows accumulated finals only (no trailing partial)
+          return {
+            ...m as CounterpartMsg,
+            text: existing ? existing + " " + text : text,
+            isLive: false,
+          };
+        }));
+        fetchTranslation(counterpartId, lastFinalTextRef.current);
+      } else {
+        // Partial: show accumulated finals + current growing partial
+        setMessages(prev => prev.map(m => {
+          if (m.id !== counterpartId) return m;
+          const base = lastFinalTextRef.current;
+          return {
+            ...m as CounterpartMsg,
+            text: base ? base + " " + text : text,
+            isLive: true,
+          };
+        }));
+      }
+    });
+  }
+
+  function handleHeStopped() {
+    stopListening();
+    const heardText = lastFinalTextRef.current;
+    currentHeardTextRef.current = heardText;
+    lastFinalTextRef.current = "";
+
+    if (heardText) {
+      transcriptRef.current = [...transcriptRef.current, { role: "counterpart", text: heardText }];
+      const counterpartOpt: ChosenOption = {
+        speaker: "counterpart",
+        optionText: heardText,
+        optionIndex: -1,
+        chosenAt: new Date().toISOString(),
+      };
+      chosenOptionsRef.current.push(counterpartOpt);
+      sendOptionChosen(heardText, -1); // -1 marks counterpart entry in SQLite
+    }
+
+    const msgId = uid();
+    currentUserMsgIdRef.current = msgId;
+    setMessages(prev => [...prev, { id: msgId, kind: "user", suggestion: null }]);
+    updatePhase("generating");
+
+    callSuggestAPI(heardText || null, msgId, false).then(() => updatePhase("user_turn"));
+  }
+
+  function handleRegenerate() {
+    const msgId = currentUserMsgIdRef.current;
+    if (!msgId) return;
+    updatePhase("generating");
+    setMessages(prev => prev.map(m =>
+      m.id === msgId ? { ...m as UserMsg, suggestion: null } : m
+    ));
+    callSuggestAPI(currentHeardTextRef.current || null, msgId, true).then(() => updatePhase("user_turn"));
+  }
+
+  function handleDidntHear() {
+    const msgId = currentUserMsgIdRef.current;
+    if (!msgId) return;
+    setMessages(prev => prev.map(m =>
+      m.id === msgId ? { ...m as UserMsg, suggestion: DIDNT_HEAR } : m
+    ));
+    // Stay in user_turn, "Я это сказал" remains available
+  }
+
+  function handleUrgentExit() {
+    // Stop mic immediately
+    stopListening();
+    lastFinalTextRef.current = "";
+    setHasFinalText(false);
+    // Remove live/partial counterpart bubble if present
+    setMessages(prev => {
+      const last = prev[prev.length - 1];
+      if (last?.kind === "counterpart" && (last as CounterpartMsg).isLive) {
+        return prev.slice(0, -1);
+      }
+      return prev;
+    });
+    updatePhase("exit_options");
+  }
+
+  function handleSelectExitOption(opt: SuggestSingle) {
+    const msgId = currentUserMsgIdRef.current;
+    if (!msgId) return;
+    setMessages(prev => prev.map(m =>
+      m.id === msgId ? { ...m as UserMsg, suggestion: opt } : m
+    ));
+    setExitPending(true);
+    updatePhase("user_turn");
+  }
+
+  function doEndCall() {
+    stopListening();
+    sendSessionEnd();
+    const endedAt = new Date().toISOString();
+    try {
+      sessionStorage.setItem("sufler:result", JSON.stringify({
+        sessionId,
+        organization: prepSessionRef.current.organization ?? null,
+        goal: prepSessionRef.current.goal ?? prepSessionRef.current.call_goal ?? null,
+        startedAt: startedAtRef.current,
+        endedAt,
+        chosenOptions: chosenOptionsRef.current,
+      }));
+    } catch { /* ignore */ }
+    transitionTo(() => router.push("/"));
+  }
+
+  // ── Render ────────────────────────────────────────────────────────────────
+
+  // Find the current user suggestion for buttons
+  const lastMsg = messages[messages.length - 1];
+  const currentSuggestion = lastMsg?.kind === "user" ? lastMsg.suggestion : null;
+
+  // Locked until counterpart's first transcript:final arrives in current listening cycle
+  const buttonsLocked = phase === "listening" && !hasFinalText;
+
+  const isCurrentUserMsg = (id: string) =>
+    id === currentUserMsgIdRef.current &&
+    (phase === "user_turn" || phase === "listening" || phase === "exit_options");
+
+  const org = prepSession.organization || "организацию";
+
+  return (
+    <>
+    {showModal && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm px-6">
+        <div className="w-full max-w-sm rounded-2xl bg-zinc-900 border border-zinc-700 px-6 py-7 text-center">
+          <p className="text-base font-semibold text-white leading-snug mb-2">
+            Наберите {org}
+          </p>
+          <p className="text-sm text-gray-400 leading-relaxed mb-6">
+            Поставьте на громкую связь и положите телефон рядом.
+            Затем произнесите первую заготовленную фразу.
+          </p>
+          <button
+            type="button"
+            onClick={handleModalDismiss}
+            className="w-full h-12 rounded-xl bg-white text-sm font-semibold text-black transition active:scale-[0.99]"
+          >
+            Понятно
+          </button>
+        </div>
+      </div>
+    )}
+    {showReadModal && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm px-6">
+        <div className="w-full max-w-sm rounded-2xl bg-zinc-900 border border-zinc-700 px-6 py-7">
+          <p className="text-base font-semibold text-white text-center mb-5">
+            Как вам удобнее читать?
+          </p>
+          <div className="rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 mb-5 space-y-1">
+            <p className="text-[15px] font-semibold text-zinc-100">буонджОрно, воррЭй ординАре...</p>
+            <p className="text-[14px] text-blue-400">Buongiorno, vorrei ordinare...</p>
+          </div>
+          <div className="space-y-2">
+            <button
+              type="button"
+              onClick={() => handleReadModeSelect("translit")}
+              className="w-full h-12 rounded-xl bg-white text-sm font-semibold text-zinc-900 transition active:scale-[0.99]"
+            >
+              Русскими буквами
+            </button>
+            <button
+              type="button"
+              onClick={() => handleReadModeSelect("italian")}
+              className="w-full h-12 rounded-xl border border-zinc-600 text-sm font-medium text-zinc-300 transition active:scale-[0.99]"
+            >
+              На итальянском
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+    <main className="mx-auto flex h-screen w-full max-w-md flex-col">
+
+      {/* Fixed header */}
+      <header className="shrink-0 px-4 pt-8 pb-4 border-b border-zinc-900">
+        <p className="text-xs uppercase tracking-widest text-zinc-600">Суфлер</p>
+        <h1 className="mt-1 text-lg font-semibold text-zinc-100">
+          {prepSession.organization || "Звонок"}
+        </h1>
+        {(prepSession.goal ?? prepSession.call_goal) && (
+          <p className="mt-0.5 text-sm text-zinc-600 line-clamp-1">
+            {prepSession.goal ?? prepSession.call_goal}
+          </p>
+        )}
+      </header>
+
+      {/* Scrollable chat — pb accounts for fixed footer */}
+      <div className="flex-1 overflow-y-auto px-4 py-5 pb-16 space-y-3">
+
+        {messages.length <= 1 && phase === "listening" && (
+          <p className="text-sm text-zinc-700 text-center py-8">Ждём собеседника...</p>
+        )}
+
+        {messages.map((msg) => {
+          if (msg.kind === "system") {
+            return (
+              <p key={msg.id} className="text-xs text-zinc-600 italic leading-relaxed text-center px-2 py-1">
+                {msg.text}
+              </p>
+            );
+          }
+
+          if (msg.kind === "counterpart") {
+            const translation = translations[msg.id];
+            return (
+              <div key={msg.id} className="flex justify-start pl-1 anim-bubble-l">
+                <div className="max-w-[80%] border-l-2 border-zinc-600 pl-3 transition-colors duration-200">
+                  {msg.text ? (
+                    <>
+                      <p className={`text-[14px] leading-relaxed ${msg.isLive ? "text-zinc-500 italic" : "text-gray-300"}`}>
+                        {msg.text}
+                      </p>
+                      {!msg.isLive && translation !== undefined && translation !== "" && (
+                        <p className="text-[12px] italic text-gray-500 mt-1 leading-relaxed">
+                          {translation}
+                        </p>
+                      )}
+                    </>
+                  ) : (
+                    <TypingDots />
+                  )}
+                </div>
+              </div>
+            );
+          }
+
+          // User message (right) — buttons live inside the bubble for the current message
+          const isCurrent = isCurrentUserMsg(msg.id);
+          const suggestion = msg.suggestion;
+
+          return (
+            <div key={msg.id} className="flex justify-end anim-bubble-r">
+              <div className="w-[92%] rounded-2xl rounded-tr-sm border border-zinc-700 bg-zinc-900 px-4 py-4">
+                {suggestion === null ? (
+                  <TypingDots />
+                ) : (
+                  <>
+                    {readMode === "translit" ? (
+                      <>
+                        <p className="text-[22px] font-bold text-gray-100 leading-snug">
+                          {suggestion.translit}
+                        </p>
+                        <p className="text-[13px] italic text-gray-500 leading-snug mt-2">
+                          {suggestion.russian}
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <p className="text-[22px] font-bold text-blue-400 leading-snug">
+                          {suggestion.italian}
+                        </p>
+                        <p className="text-[13px] italic text-gray-500 leading-snug mt-2">
+                          {suggestion.russian}
+                        </p>
+                      </>
+                    )}
+
+                    {/* Buttons — only in user_turn, only last bubble */}
+                    {isCurrent && phase === "user_turn" && !exitPending && (
+                      <div className="mt-4 pt-3 border-t border-zinc-800 anim-fade-up-fast" style={{ animationDelay: "80ms" }}>
+                        <div className="grid grid-cols-2 gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleISaidIt(suggestion)}
+                            className="h-10 rounded-xl bg-zinc-100 text-[13px] font-semibold text-zinc-900 transition-all duration-150 hover:bg-white hover:scale-[1.02] active:scale-[0.96]"
+                          >
+                            Я это сказал
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleRegenerate}
+                            className="h-10 rounded-xl bg-zinc-800 text-[13px] text-zinc-300 transition-all duration-150 hover:scale-[1.01] hover:border hover:border-zinc-600 active:scale-[0.99]"
+                          >
+                            Другой вариант
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleDidntHear}
+                            className="h-10 rounded-xl bg-zinc-800 text-[13px] text-zinc-300 transition-all duration-150 hover:scale-[1.01] hover:border hover:border-zinc-600 active:scale-[0.99]"
+                          >
+                            Не расслышал
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleUrgentExit}
+                            className="h-10 rounded-xl bg-zinc-800 text-[13px] text-zinc-400 transition-all duration-150 hover:scale-[1.01] hover:border hover:border-zinc-600 active:scale-[0.99]"
+                          >
+                            Завершить
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Exit pending — only "Я это сказал" */}
+                    {isCurrent && phase === "user_turn" && exitPending && (
+                      <div className="mt-4 pt-3 border-t border-zinc-800">
+                        <button
+                          type="button"
+                          onClick={() => handleISaidIt(suggestion)}
+                          className="w-full h-10 rounded-xl bg-zinc-100 text-[13px] font-semibold text-zinc-900 transition active:scale-[0.99]"
+                        >
+                          Я это сказал
+                        </button>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
+          );
+        })}
+
+        {/* Listening controls — two buttons */}
+        {phase === "listening" && (
+          <div className="space-y-2 anim-slide-up">
+            <button
+              type="button"
+              onClick={handleHeStopped}
+              disabled={!hasFinalText}
+              className={`w-full py-3 rounded-xl border border-zinc-600 bg-zinc-800 text-sm font-medium text-gray-300 transition-all duration-200 active:scale-[0.97] flex items-center justify-center gap-2 ${!hasFinalText ? "opacity-40 cursor-not-allowed" : "hover:bg-zinc-700"}`}
+            >
+              <span>🎙</span>
+              Собеседник закончил фразу
+            </button>
+            <button
+              type="button"
+              onClick={handleUrgentExit}
+              className="w-full py-2 rounded-xl border border-zinc-700 bg-transparent text-sm text-gray-500 transition-all duration-150 hover:text-gray-300 hover:border-zinc-600 active:scale-[0.99]"
+            >
+              Срочно завершить разговор
+            </button>
+          </div>
+        )}
+
+        {/* Exit phrase picker */}
+        {phase === "exit_options" && (
+          <div className="space-y-2 pt-1 anim-slide-up">
+            <p className="text-xs text-zinc-600 text-center">Выберите фразу для завершения</p>
+            {EXIT_OPTIONS.map((opt, i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => handleSelectExitOption(opt)}
+                className="w-full text-left rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3 transition active:scale-[0.99] hover:border-zinc-600"
+              >
+                <p className="text-sm text-zinc-100 leading-snug">{opt.russian}</p>
+                <p className="text-xs text-zinc-500 mt-0.5">{opt.italian}</p>
+              </button>
+            ))}
+            <button
+              type="button"
+              onClick={() => updatePhase("user_turn")}
+              className="w-full h-9 text-xs text-zinc-600 transition hover:text-zinc-400"
+            >
+              Назад
+            </button>
+          </div>
+        )}
+
+        <div ref={bottomRef} />
+      </div>
+
+      {/* Fixed exit footer — outside scroll, with backdrop blur */}
+      <div className="shrink-0 backdrop-blur-sm bg-zinc-950/80 border-t border-zinc-900 px-4 pt-3 pb-7">
+        <button
+          type="button"
+          onClick={doEndCall}
+          className="flex items-center gap-2 text-xs text-zinc-500 opacity-40 hover:opacity-100 hover:text-zinc-300 transition-all duration-200 active:scale-[0.97]"
+        >
+          <span className="text-zinc-600">✕</span>
+          <span>Выйти из суфлёра</span>
+        </button>
+      </div>
+
+    </main>
+    </>
+  );
+}
+
