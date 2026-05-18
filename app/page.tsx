@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { transitionTo } from "@/lib/transition";
 import { downloadTranscript, formatDateTime, type ChosenOption, type SessionForTranscript } from "@/lib/transcript";
+import HeroScreen from "@/components/HeroScreen";
 
 type ResultData = {
   sessionId: string;
@@ -186,71 +187,6 @@ export default function HomePage() {
   // ── Start screen ───────────────────────────────────────────────────────────
 
   return (
-    <>
-      <main className="mx-auto flex min-h-screen w-full max-w-md flex-col items-center justify-center px-4">
-        <button
-          type="button"
-          onClick={() => transitionTo(() => router.push("/call/new"))}
-          className="anim-fade-up flex h-14 w-full items-center justify-center gap-2 rounded-xl bg-zinc-100 text-base font-semibold text-zinc-900 transition-all duration-150 hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(255,255,255,0.05)] active:scale-[0.98]"
-        >
-          Суфлер
-          <span className="text-lg">→</span>
-        </button>
-        <p className="mt-3 text-[14px] text-gray-500 anim-fade-up" style={{ animationDelay: "150ms" }}>Суфлёр на искусственном интеллекте</p>
-        <button
-          type="button"
-          onClick={() => setShowHow(true)}
-          className="mt-4 text-sm text-zinc-600 hover:text-zinc-400 transition"
-        >
-          Как это работает?
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setShowLangs(v => !v)}
-          className="mt-3 text-[13px] text-gray-500 hover:text-gray-300 transition-colors duration-200 cursor-pointer"
-        >
-          Доступные языки →
-        </button>
-
-        {/* Inline language expand */}
-        <div className={`overflow-hidden transition-all duration-300 ease-out ${showLangs ? "max-h-96 opacity-100 mt-4" : "max-h-0 opacity-0 mt-0"}`}>
-          <div className="flex flex-wrap gap-3 justify-center" style={{ maxWidth: 320, margin: "0 auto" }}>
-            {LANGUAGES.map((lang) => (
-              <button
-                key={lang.name}
-                type="button"
-                onClick={() => {
-                  if (lang.active) { setShowLangs(false); return; }
-                  showToast();
-                }}
-                className="flex flex-col items-center gap-0.5"
-                style={{
-                  opacity: lang.active ? 1 : 0.3,
-                  filter: lang.active ? "none" : "grayscale(100%)",
-                }}
-              >
-                <span className={`text-2xl ${lang.active ? "border-b-2 border-blue-500 pb-0.5" : ""}`}>
-                  {lang.flag}
-                </span>
-                <span className={`text-[10px] ${lang.active ? "text-gray-300" : "text-gray-600"}`}>
-                  {lang.name}
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
-
-      </main>
-
-      {/* Toast */}
-      <div className={`fixed bottom-8 left-1/2 -translate-x-1/2 z-50 transition-all duration-300 ${toast ? "opacity-100 translate-y-0" : "opacity-0 translate-y-5 pointer-events-none"}`}>
-        <div className="bg-zinc-800 text-gray-300 rounded-lg px-4 py-2 text-sm whitespace-nowrap">
-          Пока недоступен
-        </div>
-      </div>
-
-      {showHow && <HowItWorksModal onClose={() => setShowHow(false)} />}
-    </>
+    <HeroScreen onStart={() => transitionTo(() => router.push("/call/new"))} />
   );
 }
