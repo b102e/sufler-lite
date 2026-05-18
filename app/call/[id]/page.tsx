@@ -312,6 +312,8 @@ export default function CallPage() {
       if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
       silenceTimerRef.current = setTimeout(() => {
         if (phaseRef.current !== "listening") return;
+        // Counterpart already said something — let 30s auto-stop handle it
+        if (lastFinalTextRef.current.trim()) return;
         clearListeningTimers();
         stopListening();
         setHasFinalText(false);
