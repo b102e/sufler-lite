@@ -10,8 +10,6 @@ function isValidSessionId(id) {
   return typeof id === "string" && UUID_RE.test(id);
 }
 
-const MAX_TEXT_LEN = 1024;
-
 // ─── Deepgram ─────────────────────────────────────────────────────────────────
 
 function readDeepgramKey() {
@@ -28,25 +26,12 @@ function readDeepgramKey() {
 
 // sessionId → { dgSocket, browserSocket, pendingChunks }
 const deepgramSessions = new Map();
-// sessionId → close timer (grace period after audio:stop)
-const dgCloseTimers = new Map();
-
-const DG_GRACE_MS = 8000; // keep Deepgram alive 8s after audio:stop
 
 async function startDeepgramSession(browserSocket, sessionId, language = "it") {
-  // Cancel any pending grace-period close
-  if (dgCloseTimers.has(sessionId)) {
-    clearTimeout(dgCloseTimers.get(sessionId));
-    dgCloseTimers.delete(sessionId);
-  }
-
+  // Always close existing session cleanly before creating a new one.
+  // No grace period — stale DG results cause duplicate transcripts.
   if (deepgramSessions.has(sessionId)) {
-    const session = deepgramSessions.get(sessionId);
-    session.browserSocket = browserSocket;
-    session.stopped = false; // resume forwarding transcripts
-    browserSocket.send(JSON.stringify({ type: "audio:ready", sessionId }));
-    console.log(`[dg] reused for ${sessionId}`);
-    return;
+    stopDeepgramSession(sessionId);
   }
 
   const key = readDeepgramKey();
@@ -56,7 +41,7 @@ async function startDeepgramSession(browserSocket, sessionId, language = "it") {
     return;
   }
 
-  const session = { dgSocket: null, browserSocket, pendingChunks: [], stopped: false };
+  const session = { dgSocket: null, browserSocket, pendingChunks: [] };
   deepgramSessions.set(sessionId, session);
 
   try {
@@ -77,21 +62,22 @@ async function startDeepgramSession(browserSocket, sessionId, language = "it") {
       console.log(`[dg] open for ${sessionId}`);
       for (const chunk of session.pendingChunks) dgWs.send(chunk);
       session.pendingChunks = [];
-      browserSocket.send(JSON.stringify({ type: "audio:ready", sessionId }));
+      // Use session.browserSocket — always current even if updated
+      session.browserSocket.send(JSON.stringify({ type: "audio:ready", sessionId }));
     });
 
     dgWs.addEventListener("message", (event) => {
       try {
-        if (session.stopped) return; // grace period — don't forward stale transcripts
         const data = JSON.parse(event.data.toString());
         if (data.type === "Results") {
           const text = data.channel?.alternatives?.[0]?.transcript ?? "";
           if (!text) return;
           const isFinal = data.speech_final || data.is_final;
+          // Always read session.browserSocket — not a stale closure variable
           if (isFinal) {
-            browserSocket.send(JSON.stringify({ type: "transcript:final", sessionId, text }));
+            session.browserSocket.send(JSON.stringify({ type: "transcript:final", sessionId, text }));
           } else {
-            browserSocket.send(JSON.stringify({ type: "transcript:partial", sessionId, text }));
+            session.browserSocket.send(JSON.stringify({ type: "transcript:partial", sessionId, text }));
           }
         }
       } catch { /* ignore */ }
@@ -123,36 +109,12 @@ function sendAudioBinary(sessionId, buffer) {
   }
 }
 
-function stopDeepgramSession(sessionId, immediate = false) {
+function stopDeepgramSession(sessionId) {
   const session = deepgramSessions.get(sessionId);
   if (!session) return;
-
-  if (immediate) {
-    clearTimeout(dgCloseTimers.get(sessionId));
-    dgCloseTimers.delete(sessionId);
-    try { session.dgSocket?.close(); } catch { /* ignore */ }
-    deepgramSessions.delete(sessionId);
-    console.log(`[dg] stopped (immediate) for ${sessionId}`);
-    return;
-  }
-
-  // Stop forwarding transcripts immediately
-  session.stopped = true;
-
-  // Grace period — keep connection alive, close later
-  if (!dgCloseTimers.has(sessionId)) {
-    const timer = setTimeout(() => {
-      const s = deepgramSessions.get(sessionId);
-      if (s) {
-        try { s.dgSocket?.close(); } catch { /* ignore */ }
-        deepgramSessions.delete(sessionId);
-      }
-      dgCloseTimers.delete(sessionId);
-      console.log(`[dg] closed after grace for ${sessionId}`);
-    }, DG_GRACE_MS);
-    dgCloseTimers.set(sessionId, timer);
-    console.log(`[dg] grace period started for ${sessionId}`);
-  }
+  try { session.dgSocket?.close(); } catch { /* ignore */ }
+  deepgramSessions.delete(sessionId);
+  console.log(`[dg] stopped for ${sessionId}`);
 }
 
 // ─── WebSocket Server ─────────────────────────────────────────────────────────
@@ -214,7 +176,7 @@ wss.on("connection", (socket, req) => {
 
       case "session:end":
         if (!isValidSessionId(sessionId)) break;
-        stopDeepgramSession(sessionId, true); // immediate on session end
+        stopDeepgramSession(sessionId);
         socket.sessionId = null;
         console.log(`[ws] session:end ${sessionId}`);
         socket.send(JSON.stringify({ type: "session:closed", sessionId }));
