@@ -34,11 +34,18 @@ export function useCallSession(sessionId: string) {
       .then((stream) => {
         streamRef.current = stream;
 
-        const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
-          ? "audio/webm;codecs=opus"
-          : "audio/webm";
+        const MIME_CANDIDATES = [
+          "audio/webm;codecs=opus",
+          "audio/webm",
+          "audio/ogg;codecs=opus",
+          "audio/mp4;codecs=aac",
+          "audio/mp4",
+        ];
+        const mimeType = MIME_CANDIDATES.find(t => MediaRecorder.isTypeSupported(t));
 
-        const recorder = new MediaRecorder(stream, { mimeType });
+        const recorder = mimeType
+          ? new MediaRecorder(stream, { mimeType })
+          : new MediaRecorder(stream); // let browser choose
         recorderRef.current = recorder;
 
         recorder.ondataavailable = (e) => {
