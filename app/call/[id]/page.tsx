@@ -112,6 +112,7 @@ export default function CallPage() {
   const silenceTimerRef      = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastDgFinalRef       = useRef("");  // dedup consecutive identical Deepgram finals
   const currentPartialRef    = useRef("");  // latest partial text (fallback if button pressed mid-recognition)
+  const currentCounterpartId = useRef("");  // ID of active counterpart bubble
   const openingFetchedRef    = useRef(false);
   const bottomRef            = useRef<HTMLDivElement>(null);
 
@@ -307,6 +308,7 @@ export default function CallPage() {
     lastFinalTextRef.current = "";
     lastDgFinalRef.current = "";
     currentPartialRef.current = "";
+    currentCounterpartId.current = counterpartId;
     setHasFinalText(false);
     setMessages(prev => [...prev, { id: counterpartId, kind: "counterpart", text: "", isLive: true }]);
     updatePhase("listening");
@@ -391,8 +393,19 @@ export default function CallPage() {
     // Use final text if available; fall back to last partial if button pressed mid-recognition
     const heardText = lastFinalTextRef.current || currentPartialRef.current;
     currentHeardTextRef.current = heardText;
+
+    // If bubble is still isLive (no is_final arrived), finalize it and fetch translation
+    const cid = currentCounterpartId.current;
+    if (cid && currentPartialRef.current && !lastFinalTextRef.current) {
+      setMessages(prev => prev.map(m =>
+        m.id === cid ? { ...m as CounterpartMsg, isLive: false } : m
+      ));
+      fetchTranslation(cid, currentPartialRef.current);
+    }
+
     lastFinalTextRef.current = "";
     currentPartialRef.current = "";
+    currentCounterpartId.current = "";
 
     if (heardText) {
       transcriptRef.current = [...transcriptRef.current, { role: "counterpart", text: heardText }];
