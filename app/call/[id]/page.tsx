@@ -111,6 +111,7 @@ export default function CallPage() {
   const autoStopTimerRef     = useRef<ReturnType<typeof setTimeout> | null>(null);
   const silenceTimerRef      = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastDgFinalRef       = useRef("");  // dedup consecutive identical Deepgram finals
+  const currentPartialRef    = useRef("");  // latest partial text (fallback if button pressed mid-recognition)
   const openingFetchedRef    = useRef(false);
   const bottomRef            = useRef<HTMLDivElement>(null);
 
@@ -305,6 +306,7 @@ export default function CallPage() {
     const counterpartId = uid();
     lastFinalTextRef.current = "";
     lastDgFinalRef.current = "";
+    currentPartialRef.current = "";
     setHasFinalText(false);
     setMessages(prev => [...prev, { id: counterpartId, kind: "counterpart", text: "", isLive: true }]);
     updatePhase("listening");
@@ -366,7 +368,9 @@ export default function CallPage() {
       } else {
         if (text.trim()) {
           setHasFinalText(true);
-          resetSilenceTimer(); // reset on any partial word
+          resetSilenceTimer();
+          const base = lastFinalTextRef.current;
+          currentPartialRef.current = base ? base + " " + text.trim() : text.trim();
         }
         setMessages(prev => prev.map(m => {
           if (m.id !== counterpartId) return m;
@@ -384,9 +388,11 @@ export default function CallPage() {
   function handleHeStopped() {
     clearListeningTimers();
     stopListening();
-    const heardText = lastFinalTextRef.current;
+    // Use final text if available; fall back to last partial if button pressed mid-recognition
+    const heardText = lastFinalTextRef.current || currentPartialRef.current;
     currentHeardTextRef.current = heardText;
     lastFinalTextRef.current = "";
+    currentPartialRef.current = "";
 
     if (heardText) {
       transcriptRef.current = [...transcriptRef.current, { role: "counterpart", text: heardText }];
