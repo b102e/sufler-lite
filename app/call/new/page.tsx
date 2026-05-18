@@ -84,10 +84,10 @@ export default function NewCallPage() {
   if (micBlocked) {
     const showSettingsHint = retryCountRef.current > 1;
     return (
-      <main className="mx-auto flex min-h-screen w-full max-w-md flex-col items-center justify-center px-6 text-center">
+      <main className="mx-auto flex min-h-screen w-full max-w-md flex-col items-center justify-center px-6 text-center bg-cb-bg">
         <div className="mb-6">
-          <div className="w-14 h-14 rounded-full bg-zinc-800 flex items-center justify-center mx-auto mb-5">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-zinc-400">
+          <div className="w-14 h-14 rounded-full bg-cb-dark-gray flex items-center justify-center mx-auto mb-5">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-cb-muted">
               <line x1="1" y1="1" x2="23" y2="23" />
               <path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6" />
               <path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23" />
@@ -95,15 +95,15 @@ export default function NewCallPage() {
               <line x1="8" y1="23" x2="16" y2="23" />
             </svg>
           </div>
-          <h2 className="text-lg font-semibold text-zinc-100 mb-2">
+          <h2 className="text-lg font-semibold text-cb-text mb-2">
             Нет доступа к микрофону
           </h2>
-          <p className="text-sm text-zinc-400 leading-relaxed">
+          <p className="text-sm text-cb-muted leading-relaxed">
             Суфлёр не может работать без доступа к микрофону.
             Разрешите доступ чтобы продолжить.
           </p>
           {showSettingsHint && (
-            <p className="mt-3 text-xs text-zinc-600 leading-relaxed">
+            <p className="mt-3 text-xs text-cb-muted leading-relaxed">
               Если браузер уже заблокировал доступ — откройте настройки браузера
               и разрешите доступ к микрофону для этого сайта.
             </p>
@@ -114,14 +114,14 @@ export default function NewCallPage() {
           <button
             type="button"
             onClick={handleRetryMic}
-            className="w-full h-14 rounded-2xl bg-zinc-100 text-base font-semibold text-zinc-900 transition active:scale-[0.99]"
+            className="w-full h-14 rounded-2xl bg-cb-emerald text-cb-bg text-base font-medium hover:bg-cb-emerald-hover active:scale-[0.98] transition-all duration-150"
           >
             Разрешить доступ
           </button>
           <button
             type="button"
             onClick={() => transitionTo(() => router.push("/"))}
-            className="w-full h-12 rounded-xl border border-zinc-800 text-sm font-medium text-zinc-400 transition active:scale-[0.99]"
+            className="w-full h-12 rounded-xl border border-cb-dark-gray text-sm font-medium text-cb-muted transition active:scale-[0.99]"
           >
             Вернуться в начало
           </button>
@@ -133,8 +133,8 @@ export default function NewCallPage() {
   return (
     <main className="mx-auto w-full max-w-md min-h-screen">
       {checking && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/80">
-          <p className="text-sm text-zinc-400">Запрашиваем доступ к микрофону…</p>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-cb-bg/90">
+          <p className="text-sm text-cb-muted">Запрашиваем доступ к микрофону…</p>
         </div>
       )}
       {step === "clarification" && (

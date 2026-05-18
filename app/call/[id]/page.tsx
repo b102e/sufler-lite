@@ -496,15 +496,15 @@ export default function CallPage() {
     return (
       <main className="mx-auto flex min-h-screen w-full max-w-md flex-col items-center justify-center px-6 text-center">
         <p className="text-4xl mb-6">🔒</p>
-        <h1 className="text-lg font-semibold text-zinc-100 mb-2">Сессия недоступна</h1>
-        <p className="text-sm text-zinc-400 leading-relaxed mb-8">
+        <h1 className="text-lg font-semibold text-cb-text mb-2">Сессия недоступна</h1>
+        <p className="text-sm text-cb-muted leading-relaxed mb-8">
           Эта ссылка устарела или была открыта на другом устройстве.
           Данные звонка хранятся только в браузере, где был подготовлен звонок.
         </p>
         <button
           type="button"
           onClick={() => transitionTo(() => router.replace("/"))}
-          className="h-12 px-8 rounded-xl bg-zinc-100 text-sm font-semibold text-zinc-900 transition active:scale-[0.99]"
+          className="h-12 px-8 rounded-xl bg-cb-emerald text-sm font-semibold text-cb-bg transition active:scale-[0.99]"
         >
           На главную
         </button>
@@ -531,18 +531,18 @@ export default function CallPage() {
     <>
     {showModal && (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm px-6">
-        <div className="w-full max-w-sm rounded-2xl bg-zinc-900 border border-zinc-700 px-6 py-7 text-center">
-          <p className="text-base font-semibold text-white leading-snug mb-2">
+        <div className="w-full max-w-sm rounded-2xl bg-cb-card border border-cb-dark-gray px-6 py-7 text-center">
+          <p className="text-base font-semibold text-cb-text leading-snug mb-2">
             Наберите {org}
           </p>
-          <p className="text-sm text-gray-400 leading-relaxed mb-6">
+          <p className="text-sm text-cb-muted leading-relaxed mb-6">
             Поставьте на громкую связь и положите телефон рядом.
             Затем произнесите первую заготовленную фразу.
           </p>
           <button
             type="button"
             onClick={handleModalDismiss}
-            className="w-full h-12 rounded-xl bg-white text-sm font-semibold text-black transition active:scale-[0.99]"
+            className="w-full h-12 rounded-xl bg-cb-emerald text-sm font-semibold text-cb-bg transition active:scale-[0.99]"
           >
             Понятно
           </button>
@@ -551,26 +551,26 @@ export default function CallPage() {
     )}
     {showReadModal && (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm px-6">
-        <div className="w-full max-w-sm rounded-2xl bg-zinc-900 border border-zinc-700 px-6 py-7">
-          <p className="text-base font-semibold text-white text-center mb-5">
+        <div className="w-full max-w-sm rounded-2xl bg-cb-card border border-cb-dark-gray px-6 py-7">
+          <p className="text-base font-semibold text-cb-text text-center mb-5">
             Как вам удобнее читать?
           </p>
-          <div className="rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 mb-5 space-y-1">
-            <p className="text-[15px] font-semibold text-zinc-100">буонджо́рно, ворре́й ордина́ре...</p>
-            <p className="text-[14px] text-blue-400">Buongiorno, vorrei ordinare...</p>
+          <div className="rounded-xl border border-cb-dark-gray bg-cb-dark-gray px-4 py-3 mb-5 space-y-1">
+            <p className="text-[15px] font-semibold text-cb-text">буонджо́рно, ворре́й ордина́ре...</p>
+            <p className="text-[14px] text-cb-emerald">Buongiorno, vorrei ordinare...</p>
           </div>
           <div className="space-y-2">
             <button
               type="button"
               onClick={() => handleReadModeSelect("translit")}
-              className="w-full h-12 rounded-xl bg-white text-sm font-semibold text-zinc-900 transition active:scale-[0.99]"
+              className="w-full h-12 rounded-xl bg-cb-emerald text-sm font-semibold text-cb-bg transition active:scale-[0.99]"
             >
               Русскими буквами
             </button>
             <button
               type="button"
               onClick={() => handleReadModeSelect("italian")}
-              className="w-full h-12 rounded-xl border border-zinc-600 text-sm font-medium text-zinc-300 transition active:scale-[0.99]"
+              className="w-full h-12 rounded-xl border border-cb-dark-gray text-sm font-medium text-cb-muted transition active:scale-[0.99]"
             >
               На итальянском
             </button>
@@ -581,13 +581,13 @@ export default function CallPage() {
     <main className="mx-auto flex h-screen w-full max-w-md flex-col">
 
       {/* Fixed header */}
-      <header className="shrink-0 px-4 pt-8 pb-4 border-b border-zinc-900">
-        <p className="text-xs uppercase tracking-widest text-zinc-600">Суфлер</p>
-        <h1 className="mt-1 text-lg font-semibold text-zinc-100">
+      <header className="shrink-0 px-4 pt-8 pb-4 border-b border-cb-dark-gray">
+        <p className="text-xs uppercase tracking-widest text-cb-muted">Суфлер</p>
+        <h1 className="mt-1 text-lg font-semibold text-cb-text">
           {prepSession.organization || "Звонок"}
         </h1>
         {(prepSession.goal ?? prepSession.call_goal) && (
-          <p className="mt-0.5 text-sm text-zinc-600 line-clamp-1">
+          <p className="mt-0.5 text-sm text-cb-muted line-clamp-1">
             {prepSession.goal ?? prepSession.call_goal}
           </p>
         )}
@@ -597,13 +597,13 @@ export default function CallPage() {
       <div className="flex-1 overflow-y-auto px-4 py-5 pb-16 space-y-3">
 
         {messages.length <= 1 && phase === "listening" && (
-          <p className="text-sm text-zinc-700 text-center py-8">Ждём собеседника...</p>
+          <p className="text-sm text-cb-muted text-center py-8">Ждём собеседника...</p>
         )}
 
         {messages.map((msg) => {
           if (msg.kind === "system") {
             return (
-              <p key={msg.id} className="text-xs text-zinc-600 italic leading-relaxed text-center px-2 py-1">
+              <p key={msg.id} className="text-xs text-cb-muted italic leading-relaxed text-center px-2 py-1">
                 {msg.text}
               </p>
             );
@@ -613,14 +613,14 @@ export default function CallPage() {
             const translation = translations[msg.id];
             return (
               <div key={msg.id} className="flex justify-start pl-1 anim-bubble-l">
-                <div className="max-w-[80%] border-l-2 border-zinc-600 pl-3 transition-colors duration-200">
+                <div className="max-w-[80%] border-l-2 border-cb-dark-gray pl-3 transition-colors duration-200">
                   {msg.text ? (
                     <>
-                      <p className={`text-[14px] leading-relaxed ${msg.isLive ? "text-zinc-500 italic" : "text-gray-300"}`}>
+                      <p className={`text-[14px] leading-relaxed ${msg.isLive ? "text-cb-muted italic" : "text-cb-text"}`}>
                         {msg.text}
                       </p>
                       {!msg.isLive && translation !== undefined && translation !== "" && (
-                        <p className="text-[12px] italic text-gray-500 mt-1 leading-relaxed">
+                        <p className="text-[12px] italic text-cb-muted mt-1 leading-relaxed">
                           {translation}
                         </p>
                       )}
@@ -639,26 +639,26 @@ export default function CallPage() {
 
           return (
             <div key={msg.id} className="flex justify-end anim-bubble-r">
-              <div className="w-[92%] rounded-2xl rounded-tr-sm border border-zinc-700 bg-zinc-900 px-4 py-4">
+              <div className="w-[92%] rounded-2xl rounded-tr-sm border border-cb-dark-gray bg-cb-card px-4 py-4">
                 {suggestion === null ? (
                   <TypingDots />
                 ) : (
                   <>
                     {readMode === "translit" ? (
                       <>
-                        <p className="text-[22px] font-bold text-gray-100 leading-snug">
+                        <p className="text-[22px] font-bold text-cb-text leading-snug">
                           {suggestion.translit}
                         </p>
-                        <p className="text-[13px] italic text-gray-500 leading-snug mt-2">
+                        <p className="text-[13px] italic text-cb-muted leading-snug mt-2">
                           {suggestion.russian}
                         </p>
                       </>
                     ) : (
                       <>
-                        <p className="text-[22px] font-bold text-blue-400 leading-snug">
+                        <p className="text-[22px] font-bold text-cb-emerald leading-snug">
                           {suggestion.italian}
                         </p>
-                        <p className="text-[13px] italic text-gray-500 leading-snug mt-2">
+                        <p className="text-[13px] italic text-cb-muted leading-snug mt-2">
                           {suggestion.russian}
                         </p>
                       </>
@@ -666,33 +666,33 @@ export default function CallPage() {
 
                     {/* Buttons — only in user_turn, only last bubble */}
                     {isCurrent && phase === "user_turn" && !exitPending && (
-                      <div className="mt-4 pt-3 border-t border-zinc-800 anim-fade-up-fast" style={{ animationDelay: "80ms" }}>
+                      <div className="mt-4 pt-3 border-t border-cb-dark-gray anim-fade-up-fast" style={{ animationDelay: "80ms" }}>
                         <div className="grid grid-cols-2 gap-2">
                           <button
                             type="button"
                             onClick={() => handleISaidIt(suggestion)}
-                            className="h-10 rounded-xl bg-zinc-100 text-[13px] font-semibold text-zinc-900 transition-all duration-150 hover:bg-white hover:scale-[1.02] active:scale-[0.96]"
+                            className="h-10 rounded-xl bg-cb-emerald text-[13px] font-semibold text-cb-bg transition-all duration-150 hover:scale-[1.02] active:scale-[0.96]"
                           >
                             Я это сказал
                           </button>
                           <button
                             type="button"
                             onClick={handleRegenerate}
-                            className="h-10 rounded-xl bg-zinc-800 text-[13px] text-zinc-300 transition-all duration-150 hover:scale-[1.01] hover:border hover:border-zinc-600 active:scale-[0.99]"
+                            className="h-10 rounded-xl bg-cb-dark-gray text-[13px] text-cb-text border border-cb-emerald/30 transition-all duration-150 hover:scale-[1.01] hover:border-cb-emerald active:scale-[0.99]"
                           >
                             Другой вариант
                           </button>
                           <button
                             type="button"
                             onClick={handleDidntHear}
-                            className="h-10 rounded-xl bg-zinc-800 text-[13px] text-zinc-300 transition-all duration-150 hover:scale-[1.01] hover:border hover:border-zinc-600 active:scale-[0.99]"
+                            className="h-10 rounded-xl bg-cb-orange/20 text-[13px] text-cb-orange border border-cb-orange/40 transition-all duration-150 hover:bg-cb-orange hover:text-cb-bg hover:scale-[1.01] active:scale-[0.99]"
                           >
                             Не расслышал
                           </button>
                           <button
                             type="button"
                             onClick={handleUrgentExit}
-                            className="h-10 rounded-xl bg-zinc-800 text-[13px] text-zinc-400 transition-all duration-150 hover:scale-[1.01] hover:border hover:border-zinc-600 active:scale-[0.99]"
+                            className="h-10 rounded-xl bg-cb-dark-gray text-[13px] text-cb-text border border-cb-emerald/30 transition-all duration-150 hover:scale-[1.01] hover:border-cb-emerald active:scale-[0.99]"
                           >
                             Завершить
                           </button>
@@ -702,11 +702,11 @@ export default function CallPage() {
 
                     {/* Exit pending — only "Я это сказал" */}
                     {isCurrent && phase === "user_turn" && exitPending && (
-                      <div className="mt-4 pt-3 border-t border-zinc-800">
+                      <div className="mt-4 pt-3 border-t border-cb-dark-gray">
                         <button
                           type="button"
                           onClick={() => handleISaidIt(suggestion)}
-                          className="w-full h-10 rounded-xl bg-zinc-100 text-[13px] font-semibold text-zinc-900 transition active:scale-[0.99]"
+                          className="w-full h-10 rounded-xl bg-cb-emerald text-[13px] font-semibold text-cb-bg transition active:scale-[0.99]"
                         >
                           Я это сказал
                         </button>
@@ -721,10 +721,10 @@ export default function CallPage() {
 
         {/* Filler phrase while Claude is generating */}
         {phase === "generating" && currentFiller && (
-          <div className="rounded-xl border border-zinc-800 bg-zinc-900/60 px-4 py-3 anim-slide-up">
-            <p className="text-[11px] uppercase tracking-widest text-zinc-600 mb-1">Скажите пока:</p>
-            <p className="text-[18px] font-semibold text-blue-400 leading-snug">{currentFiller.it}</p>
-            <p className="text-[13px] italic text-zinc-500 mt-0.5">{currentFiller.ru}</p>
+          <div className="rounded-xl border border-cb-dark-gray bg-cb-card px-4 py-3 anim-slide-up">
+            <p className="text-[11px] uppercase tracking-widest text-cb-muted mb-1">Скажите пока:</p>
+            <p className="text-[18px] font-semibold text-cb-emerald leading-snug">{currentFiller.it}</p>
+            <p className="text-[13px] italic text-cb-muted mt-0.5">{currentFiller.ru}</p>
           </div>
         )}
 
@@ -735,7 +735,7 @@ export default function CallPage() {
               type="button"
               onClick={handleHeStopped}
               disabled={!hasFinalText}
-              className={`w-full py-3 rounded-xl border border-zinc-600 bg-zinc-800 text-sm font-medium text-gray-300 transition-all duration-200 active:scale-[0.97] flex items-center justify-center gap-2 ${!hasFinalText ? "opacity-40 cursor-not-allowed" : "hover:bg-zinc-700"}`}
+              className={`w-full py-3 rounded-xl border border-cb-dark-gray bg-cb-dark-gray text-sm font-medium text-cb-text transition-all duration-200 active:scale-[0.97] flex items-center justify-center gap-2 ${!hasFinalText ? "opacity-40 cursor-not-allowed" : "hover:bg-cb-elevated"}`}
             >
               <span>🎙</span>
               Собеседник закончил фразу
@@ -743,7 +743,7 @@ export default function CallPage() {
             <button
               type="button"
               onClick={handleUrgentExit}
-              className="w-full py-2 rounded-xl border border-zinc-700 bg-transparent text-sm text-gray-500 transition-all duration-150 hover:text-gray-300 hover:border-zinc-600 active:scale-[0.99]"
+              className="w-full py-2 rounded-xl bg-cb-red/20 text-sm text-cb-red border border-cb-red/40 transition-all duration-150 hover:bg-cb-red hover:text-cb-bg hover:border-cb-red/40 active:scale-[0.99]"
             >
               Срочно завершить разговор
             </button>
@@ -753,22 +753,22 @@ export default function CallPage() {
         {/* Exit phrase picker */}
         {phase === "exit_options" && (
           <div className="space-y-2 pt-1 anim-slide-up">
-            <p className="text-xs text-zinc-600 text-center">Выберите фразу для завершения</p>
+            <p className="text-xs text-cb-muted text-center">Выберите фразу для завершения</p>
             {EXIT_OPTIONS.map((opt, i) => (
               <button
                 key={i}
                 type="button"
                 onClick={() => handleSelectExitOption(opt)}
-                className="w-full text-left rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3 transition active:scale-[0.99] hover:border-zinc-600"
+                className="w-full text-left rounded-xl border border-cb-dark-gray bg-cb-card px-4 py-3 transition active:scale-[0.99] hover:border-cb-emerald"
               >
-                <p className="text-sm text-zinc-100 leading-snug">{opt.russian}</p>
-                <p className="text-xs text-zinc-500 mt-0.5">{opt.italian}</p>
+                <p className="text-sm text-cb-text leading-snug">{opt.russian}</p>
+                <p className="text-xs text-cb-muted mt-0.5">{opt.italian}</p>
               </button>
             ))}
             <button
               type="button"
               onClick={() => updatePhase("user_turn")}
-              className="w-full h-9 text-xs text-zinc-600 transition hover:text-zinc-400"
+              className="w-full h-9 text-xs text-cb-muted transition hover:text-cb-text"
             >
               Назад
             </button>
@@ -779,13 +779,13 @@ export default function CallPage() {
       </div>
 
       {/* Fixed exit footer — outside scroll, with backdrop blur */}
-      <div className="shrink-0 backdrop-blur-sm bg-zinc-950/80 border-t border-zinc-900 px-4 pt-3 pb-7">
+      <div className="shrink-0 backdrop-blur-sm bg-cb-bg/90 border-t border-cb-dark-gray px-4 pt-3 pb-7">
         <button
           type="button"
           onClick={doEndCall}
-          className="flex items-center gap-2 text-xs text-zinc-500 opacity-40 hover:opacity-100 hover:text-zinc-300 transition-all duration-200 active:scale-[0.97]"
+          className="flex items-center gap-2 text-xs text-cb-muted opacity-40 hover:opacity-100 hover:text-cb-text transition-all duration-200 active:scale-[0.97]"
         >
-          <span className="text-zinc-600">✕</span>
+          <span className="text-cb-muted">✕</span>
           <span>Выйти из суфлёра</span>
         </button>
       </div>
@@ -794,4 +794,3 @@ export default function CallPage() {
     </>
   );
 }
-

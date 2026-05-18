@@ -125,16 +125,16 @@ export default function ClarificationChat({ initialDescription, onComplete, onRe
 
   return (
     // fixed inset-0 prevents body scroll entirely; chat is self-contained
-    <div className="fixed inset-0 flex flex-col bg-zinc-950 anim-page">
+    <div className="fixed inset-0 flex flex-col bg-cb-bg anim-page">
       <div className="mx-auto w-full max-w-md flex flex-col h-full">
 
         {/* Header */}
-        <header className="px-4 pt-10 pb-3 border-b border-zinc-800 shrink-0">
-          <p className="text-xs uppercase tracking-widest text-zinc-500">Суфлер</p>
+        <header className="px-4 pt-10 pb-3 border-b border-cb-dark-gray shrink-0">
+          <p className="text-xs uppercase tracking-widest text-cb-muted">Суфлер</p>
           <div className="flex items-baseline justify-between mt-1">
-            <h1 className="text-lg font-semibold text-zinc-100">Подготовка звонка</h1>
+            <h1 className="text-lg font-semibold text-cb-text">Подготовка звонка</h1>
             {remaining <= 5 && remaining > 0 && !isReady && (
-              <p className="text-xs text-zinc-500">
+              <p className="text-xs text-cb-muted">
                 {remaining <= 2 ? "Почти готово" : `Осталось уточнений: ${remaining}`}
               </p>
             )}
@@ -153,8 +153,8 @@ export default function ClarificationChat({ initialDescription, onComplete, onRe
                 <div
                   className={`max-w-[82%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
                     msg.role === "assistant"
-                      ? "bg-zinc-800 text-gray-200 rounded-tl-sm"
-                      : "bg-zinc-600 text-white rounded-tr-sm"
+                      ? "bg-cb-dark-gray text-cb-text rounded-tl-sm"
+                      : "bg-cb-emerald text-cb-bg rounded-tr-sm"
                   }`}
                 >
                   {msg.text}
@@ -164,7 +164,7 @@ export default function ClarificationChat({ initialDescription, onComplete, onRe
 
             {loading && (
               <div className="flex justify-start">
-                <div className="bg-zinc-800 rounded-2xl rounded-tl-sm px-4 py-3.5">
+                <div className="bg-cb-dark-gray rounded-2xl rounded-tl-sm px-4 py-3.5">
                   <TypingDots />
                 </div>
               </div>
@@ -178,7 +178,7 @@ export default function ClarificationChat({ initialDescription, onComplete, onRe
             <button
               type="button"
               onClick={scrollToBottom}
-              className="absolute bottom-3 right-3 bg-zinc-700 hover:bg-zinc-600 text-zinc-300 text-xs px-3 py-1.5 rounded-full transition active:scale-95"
+              className="absolute bottom-3 right-3 bg-cb-elevated hover:bg-cb-dark-gray text-cb-muted text-xs px-3 py-1.5 rounded-full transition active:scale-95"
               aria-label="Прокрутить вниз"
             >
               ↓
@@ -187,25 +187,25 @@ export default function ClarificationChat({ initialDescription, onComplete, onRe
         </div>
 
         {/* Sticky input area */}
-        <div className="shrink-0 border-t border-zinc-800 px-4 pt-4 pb-8">
+        <div className="shrink-0 border-t border-cb-dark-gray px-4 pt-4 pb-8">
           {isReady ? (
             <button
               type="button"
               onClick={() => onComplete(profile)}
-              className="w-full h-14 rounded-2xl bg-zinc-100 text-base font-semibold text-zinc-900 transition active:scale-[0.99]"
+              className="w-full h-14 rounded-2xl bg-cb-emerald text-cb-bg text-base font-medium hover:bg-cb-emerald-hover active:scale-[0.98] transition-all duration-150"
             >
               Далее
             </button>
           ) : budget.is_hard_limit ? (
             <div className="space-y-3">
-              <p className="text-xs text-zinc-400 text-center leading-relaxed">
+              <p className="text-xs text-cb-muted text-center leading-relaxed">
                 Недостаточно информации для подготовки звонка.
                 <br />Попробуйте описать ситуацию короче и конкретнее.
               </p>
               <button
                 type="button"
                 onClick={onReset}
-                className="w-full h-12 rounded-xl border border-zinc-700 text-sm font-medium text-zinc-300 transition active:scale-[0.99]"
+                className="w-full h-12 rounded-xl border border-cb-dark-gray text-sm font-medium text-cb-muted transition active:scale-[0.99]"
               >
                 Начать заново
               </button>
@@ -220,13 +220,13 @@ export default function ClarificationChat({ initialDescription, onComplete, onRe
                 onKeyDown={handleKeyDown}
                 placeholder="Введите ответ"
                 disabled={loading}
-                className="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3 pr-12 text-sm text-zinc-100 placeholder-zinc-600 focus:border-zinc-500 focus:outline-none disabled:opacity-40"
+                className="w-full rounded-xl border border-cb-dark-gray bg-cb-elevated px-4 py-3 pr-12 text-sm text-cb-text placeholder:text-cb-muted focus:border-cb-emerald focus:outline-none disabled:opacity-40 transition-colors duration-200"
               />
               {input.trim() && !loading && (
                 <button
                   type="button"
                   onClick={handleSend}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-lg bg-zinc-100 text-zinc-900 transition active:scale-95"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-lg bg-cb-emerald text-cb-bg transition active:scale-95"
                   aria-label="Отправить"
                 >
                   ↑

@@ -119,53 +119,51 @@ export default function HomePage() {
 
   if (result) {
     return (
-      <main className="mx-auto flex h-screen w-full max-w-md flex-col px-4 pt-8 pb-6 overflow-hidden">
+      <main className="mx-auto flex h-screen w-full max-w-md flex-col px-4 pt-8 pb-6 overflow-hidden bg-cb-bg">
 
         <header className="shrink-0 mb-4">
-          <p className="text-xs uppercase tracking-widest text-zinc-500">Суфлер</p>
-          <h1 className="mt-1 text-xl font-semibold text-zinc-100">
+          <p className="text-xs uppercase tracking-widest text-cb-muted">Суфлер</p>
+          <h1 className="mt-1 text-xl font-semibold text-cb-text">
             {result.organization || "Звонок завершён"}
           </h1>
           {result.goal && (
-            <p className="mt-0.5 text-sm text-zinc-500 line-clamp-1">{result.goal}</p>
+            <p className="mt-0.5 text-sm text-cb-muted line-clamp-1">{result.goal}</p>
           )}
         </header>
 
-        {/* Session card — grows to fill available space */}
-        <article className="flex-1 min-h-0 flex flex-col rounded-2xl border border-zinc-800 bg-zinc-900/70 p-5 mb-4">
+        <article className="flex-1 min-h-0 flex flex-col rounded-2xl border border-cb-dark-gray bg-cb-card p-5 mb-4">
           <div className="flex items-center justify-between mb-4 shrink-0">
-            <p className="text-xs uppercase tracking-widest text-zinc-600">Разговор</p>
-            <span className="text-xs text-zinc-600">{formatDateTime(result.startedAt)}</span>
+            <p className="text-xs uppercase tracking-widest text-cb-muted">Разговор</p>
+            <span className="text-xs text-cb-muted">{formatDateTime(result.startedAt)}</span>
           </div>
 
-          {/* Scrollable transcript */}
           <div className="flex-1 min-h-0 overflow-y-auto">
             {result.chosenOptions.length === 0 ? (
-              <p className="text-sm text-zinc-600 italic">(Реплики не выбраны)</p>
+              <p className="text-sm text-cb-muted italic">(Реплики не выбраны)</p>
             ) : (
               <div className="space-y-0 pb-2">
                 {result.chosenOptions.map((opt, i) => (
                   <div
                     key={i}
-                    className={`border-l-2 pl-3 pb-3 mb-3 border-b border-zinc-800 last:border-b-0 last:mb-0 anim-fade-up ${opt.speaker === "counterpart" ? "border-l-zinc-600" : "border-l-zinc-500"}`}
+                    className={`border-l-2 pl-3 pb-3 mb-3 border-b border-cb-dark-gray last:border-b-0 last:mb-0 anim-fade-up ${opt.speaker === "counterpart" ? "border-l-cb-dark-gray" : "border-l-cb-emerald"}`}
                     style={{ animationDelay: `${Math.min(i * 60, 500)}ms` }}
                   >
-                    <p className={`text-[11px] uppercase tracking-wide font-medium mb-0.5 ${opt.speaker === "counterpart" ? "text-gray-500" : "text-blue-400"}`}>
+                    <p className={`text-[11px] uppercase tracking-wide font-medium mb-0.5 ${opt.speaker === "counterpart" ? "text-cb-muted" : "text-cb-emerald"}`}>
                       {opt.speaker === "counterpart" ? "Собеседник" : "Вы"}
                     </p>
-                    <p className="text-sm text-zinc-200 leading-relaxed">{opt.optionText}</p>
+                    <p className="text-sm text-cb-text leading-relaxed">{opt.optionText}</p>
                   </div>
                 ))}
               </div>
             )}
           </div>
 
-          <div className="shrink-0 mt-4 border-t border-zinc-800 pt-4">
+          <div className="shrink-0 mt-4 border-t border-cb-dark-gray pt-4">
             <button
               type="button"
               onClick={handleDownload}
-              className="w-full h-10 rounded-xl border border-zinc-700 text-xs font-medium text-zinc-300 transition-all duration-150 active:scale-[0.99] hover:scale-[1.01] hover:border-zinc-500 hover:bg-zinc-800/50 anim-fade-up"
-            style={{ animationDelay: `${Math.min(result.chosenOptions.length * 60 + 100, 600)}ms` }}
+              className="w-full h-10 rounded-xl border border-cb-dark-gray text-xs font-medium text-cb-muted transition-all duration-150 active:scale-[0.99] hover:border-cb-emerald hover:text-cb-text anim-fade-up"
+              style={{ animationDelay: `${Math.min(result.chosenOptions.length * 60 + 100, 600)}ms` }}
             >
               Скачать транскрипт
             </button>
@@ -175,7 +173,7 @@ export default function HomePage() {
         <button
           type="button"
           onClick={() => setResult(null)}
-          className="shrink-0 flex h-14 w-full items-center justify-center rounded-xl bg-zinc-100 text-base font-semibold text-zinc-900 transition active:scale-[0.99]"
+          className="shrink-0 flex h-14 w-full items-center justify-center rounded-xl bg-cb-emerald text-cb-bg text-base font-medium transition-all duration-150 hover:bg-cb-emerald-hover active:scale-[0.98]"
         >
           Выйти
         </button>

@@ -31,7 +31,7 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="ru" className="dark">
-      <body className="bg-zinc-950 text-zinc-100 antialiased">
+      <body className="bg-cb-bg text-cb-text antialiased">
         {children}
         <footer className="fixed bottom-0 left-0 right-0 flex items-center justify-center gap-3 py-1.5 text-[10px] text-zinc-700 pointer-events-none z-10">
           <span>© {new Date().getFullYear()} Все права защищены</span>

@@ -38,11 +38,11 @@ export default function CallSummaryReview({ prepData, onSubmit }: Props) {
   }
 
   return (
-    <div className="flex flex-col min-h-screen px-4 pt-12 pb-8 anim-page">
+    <div className="flex flex-col min-h-screen px-4 pt-12 pb-8 anim-page bg-cb-bg">
       <header className="mb-8">
-        <p className="text-xs uppercase tracking-widest text-zinc-500 mb-3">Суфлер</p>
-        <h1 className="text-2xl font-semibold text-zinc-100">Проверка данных</h1>
-        <p className="mt-2 text-sm text-zinc-400">Проверьте и при необходимости исправьте</p>
+        <p className="text-xs uppercase tracking-widest text-cb-muted mb-3">Суфлер</p>
+        <h1 className="text-2xl font-semibold text-cb-text">Проверка данных</h1>
+        <p className="mt-2 text-sm text-cb-muted">Проверьте и при необходимости исправьте</p>
       </header>
 
       <div className="flex-1 space-y-5">
@@ -69,11 +69,11 @@ export default function CallSummaryReview({ prepData, onSubmit }: Props) {
         />
         <div>
           <div className="flex items-baseline justify-between mb-2">
-            <label className="text-xs font-medium text-zinc-400">
+            <label className="text-xs font-medium text-cb-muted">
               Дополнительно
             </label>
             {details.length >= LIMITS.details * COUNTER_THRESHOLD && (
-              <span className={`text-xs tabular-nums ${details.length >= LIMITS.details ? "text-red-400" : "text-zinc-500"}`}>
+              <span className={`text-xs tabular-nums ${details.length >= LIMITS.details ? "text-cb-red" : "text-cb-muted"}`}>
                 {LIMITS.details - details.length}
               </span>
             )}
@@ -84,7 +84,7 @@ export default function CallSummaryReview({ prepData, onSubmit }: Props) {
             rows={4}
             maxLength={LIMITS.details}
             placeholder="Любые подробности, номера документов, другая информация"
-            className="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm text-zinc-100 placeholder-zinc-600 focus:border-zinc-500 focus:outline-none resize-none"
+            className="w-full rounded-xl border border-cb-dark-gray bg-cb-elevated px-4 py-3 text-sm text-cb-text placeholder:text-cb-muted focus:border-cb-emerald focus:outline-none resize-none transition-colors duration-200"
           />
         </div>
       </div>
@@ -94,7 +94,7 @@ export default function CallSummaryReview({ prepData, onSubmit }: Props) {
           type="button"
           onClick={handleSubmit}
           disabled={!isValid}
-          className="w-full h-14 rounded-2xl bg-zinc-100 text-base font-semibold text-zinc-900 disabled:opacity-30 transition active:scale-[0.99]"
+          className="w-full h-14 rounded-2xl bg-cb-emerald text-cb-bg text-base font-medium disabled:opacity-30 hover:bg-cb-emerald-hover active:scale-[0.98] transition-all duration-150"
         >
           Далее
         </button>
@@ -121,9 +121,9 @@ function Field({
   return (
     <div>
       <div className="flex items-baseline justify-between mb-2">
-        <label className="text-xs font-medium text-zinc-400">{label}</label>
+        <label className="text-xs font-medium text-cb-muted">{label}</label>
         {nearLimit && (
-          <span className={`text-xs tabular-nums ${value.length >= maxLength ? "text-red-400" : "text-zinc-500"}`}>
+          <span className={`text-xs tabular-nums ${value.length >= maxLength ? "text-cb-red" : "text-cb-muted"}`}>
             {maxLength - value.length}
           </span>
         )}
@@ -134,7 +134,7 @@ function Field({
         onChange={(e) => onChange(e.target.value.slice(0, maxLength))}
         maxLength={maxLength}
         placeholder={placeholder}
-        className="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm text-zinc-100 placeholder-zinc-600 focus:border-zinc-500 focus:outline-none"
+        className="w-full rounded-xl border border-cb-dark-gray bg-cb-elevated px-4 py-3 text-sm text-cb-text placeholder:text-cb-muted focus:border-cb-emerald focus:outline-none transition-colors duration-200"
       />
     </div>
   );
