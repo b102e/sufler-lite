@@ -74,16 +74,16 @@ export default function CallPage() {
   const router  = useRouter();
   const sessionId = useRef(params.id).current;
 
-  // Load prepSession synchronously before any effects
-  const [prepSession] = useState<PrepSession>(() => {
+  // Load prepSession synchronously — null means no valid session (expired/wrong device)
+  const [prepSession] = useState<PrepSession | null>(() => {
     try {
-      if (typeof window === "undefined") return {};
+      if (typeof window === "undefined") return null;
       const raw = sessionStorage.getItem(`session:${params.id}`);
-      return raw ? JSON.parse(raw) : {};
-    } catch { return {}; }
+      return raw ? JSON.parse(raw) : null;
+    } catch { return null; }
   });
-  const prepSessionRef = useRef(prepSession);
-  prepSessionRef.current = prepSession;
+  const prepSessionRef = useRef<PrepSession>(prepSession ?? {});
+  prepSessionRef.current = prepSession ?? {};
 
   const [showModal, setShowModal] = useState(true);
   const [showReadModal, setShowReadModal] = useState(false);
@@ -464,6 +464,28 @@ export default function CallPage() {
       }));
     } catch { /* ignore */ }
     transitionTo(() => router.push("/"));
+  }
+
+  // ── Expired session guard ─────────────────────────────────────────────────
+
+  if (prepSession === null) {
+    return (
+      <main className="mx-auto flex min-h-screen w-full max-w-md flex-col items-center justify-center px-6 text-center">
+        <p className="text-4xl mb-6">🔒</p>
+        <h1 className="text-lg font-semibold text-zinc-100 mb-2">Сессия недоступна</h1>
+        <p className="text-sm text-zinc-400 leading-relaxed mb-8">
+          Эта ссылка устарела или была открыта на другом устройстве.
+          Данные звонка хранятся только в браузере, где был подготовлен звонок.
+        </p>
+        <button
+          type="button"
+          onClick={() => transitionTo(() => router.replace("/"))}
+          className="h-12 px-8 rounded-xl bg-zinc-100 text-sm font-semibold text-zinc-900 transition active:scale-[0.99]"
+        >
+          На главную
+        </button>
+      </main>
+    );
   }
 
   // ── Render ────────────────────────────────────────────────────────────────
