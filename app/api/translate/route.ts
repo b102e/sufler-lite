@@ -5,7 +5,7 @@ import { sanitizeInput } from "@/lib/sanitize";
 
 export async function POST(req: NextRequest) {
   const ip = getClientIP(req);
-  if (!checkRateLimit(`translate:${ip}`, 120, 3_600_000)) {
+  if (!checkRateLimit(`translate:${ip}`, 1000, 3_600_000)) {
     return NextResponse.json({ translation: "" });
   }
 

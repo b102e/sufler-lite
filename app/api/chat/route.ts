@@ -192,7 +192,7 @@ function parseResponse(raw: string, budget: BudgetState): ChatApiResponse | null
 export async function POST(req: NextRequest) {
   // Rate limit: 30 requests per hour per IP
   const ip = getClientIP(req);
-  if (!checkRateLimit(`chat:${ip}`, 30, 3_600_000)) {
+  if (!checkRateLimit(`chat:${ip}`, 200, 3_600_000)) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
 

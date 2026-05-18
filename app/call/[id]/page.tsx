@@ -195,7 +195,7 @@ export default function CallPage() {
         }),
       });
 
-      if (!res.body) return SUGGEST_FALLBACK;
+      if (!res.body) { clearFiller(); return SUGGEST_FALLBACK; }
 
       const reader = res.body.getReader();
       const decoder = new TextDecoder();

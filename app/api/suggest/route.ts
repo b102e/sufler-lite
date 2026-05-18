@@ -98,7 +98,7 @@ FAREWELL: false`;
 export async function POST(req: NextRequest) {
   // Rate limit: 60 requests per hour per IP
   const ip = getClientIP(req);
-  if (!checkRateLimit(`suggest:${ip}`, 60, 3_600_000)) {
+  if (!checkRateLimit(`suggest:${ip}`, 500, 3_600_000)) {
     return fallbackResponse();
   }
 
