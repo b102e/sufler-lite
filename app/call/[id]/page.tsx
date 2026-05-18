@@ -110,6 +110,7 @@ export default function CallPage() {
   const translateAbortRef    = useRef<AbortController | null>(null);
   const autoStopTimerRef     = useRef<ReturnType<typeof setTimeout> | null>(null);
   const silenceTimerRef      = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastDgFinalRef       = useRef("");  // dedup consecutive identical Deepgram finals
   const openingFetchedRef    = useRef(false);
   const bottomRef            = useRef<HTMLDivElement>(null);
 
@@ -303,6 +304,7 @@ export default function CallPage() {
     // Add live counterpart bubble and start mic
     const counterpartId = uid();
     lastFinalTextRef.current = "";
+    lastDgFinalRef.current = "";
     setHasFinalText(false);
     setMessages(prev => [...prev, { id: counterpartId, kind: "counterpart", text: "", isLive: true }]);
     updatePhase("listening");
@@ -343,6 +345,9 @@ export default function CallPage() {
     startListening((text, isFinal) => {
       if (isFinal) {
         if (!text.trim()) return;
+        // Skip exact duplicate finals (Deepgram repeats is_final with same text)
+        if (text.trim() === lastDgFinalRef.current) return;
+        lastDgFinalRef.current = text.trim();
         // Deepgram sends cumulative text per is_final — check if new text already
         // includes previous finals to avoid duplication
         const prev = lastFinalTextRef.current;
