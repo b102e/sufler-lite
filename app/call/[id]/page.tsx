@@ -169,12 +169,12 @@ export default function CallPage() {
       prep.notes ?? prep.details,
     ].filter(Boolean).join(" | ");
 
-    // Filler phrase: show after 800ms if Claude hasn't responded yet
+    // Filler phrase: show after 1600ms if Claude hasn't responded yet
     let fillerShown = false;
     const fillerTimer = setTimeout(() => {
       fillerShown = true;
       setCurrentFiller(FILLER_PHRASES[Math.floor(Math.random() * FILLER_PHRASES.length)]);
-    }, 800);
+    }, 1600);
 
     const clearFiller = () => {
       clearTimeout(fillerTimer);
