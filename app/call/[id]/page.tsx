@@ -556,7 +556,7 @@ export default function CallPage() {
             Как вам удобнее читать?
           </p>
           <div className="rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 mb-5 space-y-1">
-            <p className="text-[15px] font-semibold text-zinc-100">буонджОрно, воррЭй ординАре...</p>
+            <p className="text-[15px] font-semibold text-zinc-100">буонджо́рно, ворре́й ордина́ре...</p>
             <p className="text-[14px] text-blue-400">Buongiorno, vorrei ordinare...</p>
           </div>
           <div className="space-y-2">
