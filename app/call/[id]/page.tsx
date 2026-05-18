@@ -343,21 +343,21 @@ export default function CallPage() {
     startListening((text, isFinal) => {
       if (isFinal) {
         if (!text.trim()) return;
-        lastFinalTextRef.current = lastFinalTextRef.current
-          ? lastFinalTextRef.current + " " + text
-          : text;
+        // Deepgram sends cumulative text per is_final — check if new text already
+        // includes previous finals to avoid duplication
+        const prev = lastFinalTextRef.current;
+        const isCumulative = prev && text.trim().startsWith(prev.trim());
+        lastFinalTextRef.current = isCumulative ? text.trim() : (prev ? prev + " " + text.trim() : text.trim());
+
         setHasFinalText(true);
-        resetSilenceTimer(); // counterpart still talking, reset 10s timer
+        resetSilenceTimer();
+        const accumulated = lastFinalTextRef.current;
         setMessages(prev => prev.map(m => {
           if (m.id !== counterpartId) return m;
-          const existing = (m as CounterpartMsg).text;
-          return {
-            ...m as CounterpartMsg,
-            text: existing ? existing + " " + text : text,
-            isLive: false,
-          };
+          // Set bubble directly from accumulated ref — never append existing bubble text
+          return { ...m as CounterpartMsg, text: accumulated, isLive: false };
         }));
-        fetchTranslation(counterpartId, lastFinalTextRef.current);
+        fetchTranslation(counterpartId, accumulated);
       } else {
         if (text.trim()) {
           setHasFinalText(true);
