@@ -13,6 +13,7 @@ out/
 
 # Data
 data/
+data/*.json
 
 # OS
 .DS_Store
