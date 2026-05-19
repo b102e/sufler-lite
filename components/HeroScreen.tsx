@@ -1,5 +1,7 @@
 "use client";
 
+import HowItWorksCarousel from "@/components/HowItWorksCarousel";
+
 type Props = {
   onStart?: () => void;
   className?: string;
@@ -18,12 +20,12 @@ export default function HeroScreen({ onStart, className = "" }: Props) {
           Суфлёр подскажет фразу.<br />Ты просто читаешь вслух.
         </p>
 
-        {/* HowItWorks компонент сюда */}
+        <HowItWorksCarousel className="mt-6 mb-2" />
 
         <button
           type="button"
           onClick={onStart}
-          className="w-full bg-cb-emerald text-cb-bg rounded-2xl py-4 text-base font-medium mt-8 hover:bg-cb-emerald-hover active:scale-[0.98] transition-all duration-150"
+          className="w-full bg-cb-emerald text-cb-bg rounded-2xl py-4 text-base font-medium mt-6 hover:bg-cb-emerald-hover active:scale-[0.98] transition-all duration-150"
         >
           Новый звонок →
         </button>
