@@ -13,13 +13,14 @@ export default function HeroScreen({ onStart, className = "" }: Props) {
     <div className={`min-h-screen bg-cb-bg flex flex-col items-center justify-center px-6 ${className}`}>
       <div className="w-full max-w-sm flex flex-col items-center">
 
-        <div className="flex justify-center pt-6 pb-2">
+        <div className="flex justify-center pt-10 pb-6">
           <Image
             src="/logo.png"
             alt="Суфлёр"
-            height={36}
-            width={66}
+            height={48}
+            width={160}
             className="object-contain"
+            style={{ background: "transparent" }}
             priority
           />
         </div>
