@@ -162,7 +162,10 @@ export default function ClarificationChat({ initialDescription, onComplete, onRe
     setShowEditor(false);
     setVerified(true);
     setShowToast(true);
-    setTimeout(() => setShowToast(false), 2000);
+    setTimeout(() => {
+      setVerified(false);
+      setShowToast(false);
+    }, 2000);
   }
 
   function handleKeyDown(e: KeyboardEvent<HTMLInputElement>) {
@@ -218,7 +221,7 @@ export default function ClarificationChat({ initialDescription, onComplete, onRe
                           onClick={openEditor}
                           className="mt-3 border border-cb-emerald/40 text-cb-muted text-sm rounded-lg px-3 py-1.5 hover:border-cb-emerald hover:text-cb-text transition-colors duration-150"
                         >
-                          ✎ Проверить данные
+                          Проверить данные
                         </button>
                       ) : (
                         <span className="mt-3 block text-sm text-cb-emerald">✓ Данные проверены</span>
