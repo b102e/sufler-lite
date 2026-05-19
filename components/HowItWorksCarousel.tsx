@@ -40,21 +40,6 @@ export default function HowItWorksCarousel({ className = "" }: { className?: str
         style={{ paddingBottom: "66%" }}
         onClick={() => goTo((current + 1) % TOTAL)}
       >
-        {/* Arrows — desktop only */}
-        <button
-          type="button"
-          onClick={(e) => { e.stopPropagation(); goTo((current - 1 + TOTAL) % TOTAL); }}
-          className="hidden md:flex absolute left-2 top-1/2 -translate-y-1/2 z-10 bg-black/40 rounded-full p-1.5 text-white items-center justify-center"
-        >
-          ‹
-        </button>
-        <button
-          type="button"
-          onClick={(e) => { e.stopPropagation(); goTo((current + 1) % TOTAL); }}
-          className="hidden md:flex absolute right-2 top-1/2 -translate-y-1/2 z-10 bg-black/40 rounded-full p-1.5 text-white items-center justify-center"
-        >
-          ›
-        </button>
 
         <div
           style={{ opacity: isVisible ? 1 : 0, transition: "opacity 600ms ease" }}
