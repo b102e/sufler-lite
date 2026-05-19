@@ -9,7 +9,8 @@ const NEAR_BOTTOM_THRESHOLD = 80; // px from bottom
 
 type UIMessage =
   | { role: "user" | "assistant"; text: string }
-  | { role: "reading-question" };
+  | { role: "reading-question" }
+  | { role: "ready-message" };
 
 type Props = {
   initialDescription: string;
@@ -28,6 +29,16 @@ export default function ClarificationChat({ initialDescription, onComplete, onRe
   const [isNearBottom, setIsNearBottom] = useState(true);
   const [readingStep, setReadingStep] = useState<"idle" | "asking" | "answered">("idle");
   const [selectedReadMode, setSelectedReadMode] = useState<"translit" | "italian" | null>(null);
+
+  // Inline editor state
+  const [showEditor, setShowEditor] = useState(false);
+  const [editorName, setEditorName] = useState("");
+  const [editorOrg, setEditorOrg] = useState("");
+  const [editorGoal, setEditorGoal] = useState("");
+  const [editorDetails, setEditorDetails] = useState("");
+  const [editedProfile, setEditedProfile] = useState<CallProfile | null>(null);
+  const [verified, setVerified] = useState(false);
+  const [showToast, setShowToast] = useState(false);
 
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -126,8 +137,32 @@ export default function ClarificationChat({ initialDescription, onComplete, onRe
   function handleReadModeSelect(mode: "translit" | "italian") {
     setSelectedReadMode(mode);
     try { sessionStorage.setItem("sufler:readMode", mode); } catch { /* ignore */ }
-    setUiMessages(prev => [...prev, { role: "assistant", text: "Отлично. Готово — можно переходить к звонку." }]);
+    setUiMessages(prev => [...prev, { role: "ready-message" as const }]);
     setReadingStep("answered");
+  }
+
+  function openEditor() {
+    const src = editedProfile ?? profile;
+    setEditorName(src.caller_name ?? "");
+    setEditorOrg(src.organization ?? "");
+    setEditorGoal(src.call_goal ?? "");
+    setEditorDetails(src.notes ?? "");
+    setShowEditor(true);
+  }
+
+  function handleEditorSave() {
+    const updated: CallProfile = {
+      ...profile,
+      caller_name: editorName.trim() || profile.caller_name,
+      organization: editorOrg.trim() || profile.organization,
+      call_goal: editorGoal.trim() || profile.call_goal,
+      notes: editorDetails.trim() || profile.notes,
+    };
+    setEditedProfile(updated);
+    setShowEditor(false);
+    setVerified(true);
+    setShowToast(true);
+    setTimeout(() => setShowToast(false), 2000);
   }
 
   function handleKeyDown(e: KeyboardEvent<HTMLInputElement>) {
@@ -169,6 +204,67 @@ export default function ClarificationChat({ initialDescription, onComplete, onRe
             className="h-full overflow-y-auto px-4 py-5 space-y-3"
           >
             {uiMessages.map((msg, i) => {
+              // Ready bubble with inline editor
+              if (msg.role === "ready-message") {
+                return (
+                  <div key={i} className="flex justify-start anim-fade-up">
+                    <div className="max-w-[90%] rounded-2xl rounded-tl-sm bg-cb-dark-gray px-4 py-4">
+                      <p className="text-sm text-cb-text leading-relaxed">
+                        Отлично. Готово — можно переходить к звонку.
+                      </p>
+                      {!verified ? (
+                        <button
+                          type="button"
+                          onClick={openEditor}
+                          className="mt-3 border border-cb-emerald/40 text-cb-muted text-sm rounded-lg px-3 py-1.5 hover:border-cb-emerald hover:text-cb-text transition-colors duration-150"
+                        >
+                          ✎ Проверить данные
+                        </button>
+                      ) : (
+                        <span className="mt-3 block text-sm text-cb-emerald">✓ Данные проверены</span>
+                      )}
+
+                      {showEditor && (
+                        <div className="mt-3 bg-cb-card border border-cb-dark-gray rounded-2xl p-4 space-y-3 anim-fade-up">
+                          {[
+                            { label: "Имя", val: editorName, set: setEditorName },
+                            { label: "Организация", val: editorOrg, set: setEditorOrg },
+                            { label: "Цель звонка", val: editorGoal, set: setEditorGoal },
+                            { label: "Дополнительно", val: editorDetails, set: setEditorDetails },
+                          ].map(({ label, val, set }) => (
+                            <div key={label}>
+                              <p className="text-cb-muted text-xs mb-1">{label}</p>
+                              <input
+                                type="text"
+                                value={val}
+                                onChange={e => set(e.target.value)}
+                                className="bg-cb-elevated border border-cb-dark-gray rounded-xl px-3 py-2 text-cb-text w-full text-sm focus:border-cb-emerald outline-none transition-colors"
+                              />
+                            </div>
+                          ))}
+                          <div className="flex gap-2 pt-1">
+                            <button
+                              type="button"
+                              onClick={() => setShowEditor(false)}
+                              className="text-cb-muted text-sm px-3 py-2"
+                            >
+                              Отмена
+                            </button>
+                            <button
+                              type="button"
+                              onClick={handleEditorSave}
+                              className="bg-cb-emerald text-cb-bg rounded-xl px-4 py-2 text-sm font-medium hover:bg-cb-emerald-hover transition-colors"
+                            >
+                              Сохранить
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              }
+
               // Special reading-question bubble — rendered in correct stream position
               if (msg.role === "reading-question") {
                 return (
@@ -262,7 +358,7 @@ export default function ClarificationChat({ initialDescription, onComplete, onRe
           {isReady && readingStep === "answered" ? (
             <button
               type="button"
-              onClick={() => onComplete(profile)}
+              onClick={() => onComplete(editedProfile ?? profile)}
               className="w-full h-14 rounded-2xl bg-cb-emerald text-cb-bg text-base font-medium hover:bg-cb-emerald-hover active:scale-[0.98] transition-all duration-150"
             >
               Далее
@@ -308,6 +404,14 @@ export default function ClarificationChat({ initialDescription, onComplete, onRe
         </div>
 
       </div>
+
+      {/* Toast */}
+      {showToast && (
+        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 bg-cb-emerald text-cb-bg text-sm font-medium px-4 py-2 rounded-xl shadow-lg anim-fade-up">
+          Данные обновлены ✓
+        </div>
+      )}
+
     </div>
   );
 }

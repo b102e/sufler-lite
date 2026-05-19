@@ -20,8 +20,6 @@ type ReviewData = Pick<PrepData, "name" | "organization" | "goal" | "details">;
 
 export default function NewCallPage() {
   const router = useRouter();
-  const [step, setStep] = useState<FlowStep>("clarification");
-  const [prepData, setPrepData] = useState<PrepData>(emptyPrepData);
   const [micBlocked, setMicBlocked] = useState(false);
   const [checking, setChecking] = useState(false);
   const pendingDataRef = useRef<{ finalPrep: PrepData; sessionId: string } | null>(null);
@@ -32,14 +30,27 @@ export default function NewCallPage() {
       .filter(Boolean)
       .map(v => (typeof v === "string" ? v : JSON.stringify(v)))
       .join("\n");
-    setPrepData((prev) => ({
-      ...prev,
+
+    const finalPrep: PrepData = {
       name: profile.caller_name ?? "",
       organization: profile.organization ?? "",
       goal: profile.call_goal ?? "",
       details: extraDetails,
-    }));
-    setStep("review");
+    };
+
+    // Write to sessionStorage synchronously before proceeding
+    const sessionId = uuidv4();
+    try {
+      sessionStorage.setItem(`session:${sessionId}`, JSON.stringify({
+        ...finalPrep,
+        caller_name: finalPrep.name,
+        call_goal: finalPrep.goal,
+        notes: finalPrep.details,
+      }));
+    } catch { /* ignore */ }
+
+    pendingDataRef.current = { finalPrep, sessionId };
+    checkMicAndProceed(finalPrep, sessionId);
   }
 
   async function checkMicAndProceed(finalPrep: PrepData, sessionId: string) {
@@ -56,23 +67,6 @@ export default function NewCallPage() {
     }
   }
 
-  function handleReviewSubmit(data: ReviewData) {
-    const finalPrep = { ...prepData, ...data };
-    const sessionId = uuidv4();
-    try {
-      sessionStorage.setItem(
-        `session:${sessionId}`,
-        JSON.stringify({
-          ...finalPrep,
-          caller_name: finalPrep.name,
-          call_goal: finalPrep.goal,
-          notes: finalPrep.details,
-        })
-      );
-    } catch { /* ignore */ }
-    pendingDataRef.current = { finalPrep, sessionId };
-    checkMicAndProceed(finalPrep, sessionId);
-  }
 
   function handleRetryMic() {
     const pending = pendingDataRef.current;
@@ -137,16 +131,11 @@ export default function NewCallPage() {
           <p className="text-sm text-cb-muted">Запрашиваем доступ к микрофону…</p>
         </div>
       )}
-      {step === "clarification" && (
-        <ClarificationChat
-          initialDescription=""
-          onComplete={handleClarificationComplete}
-          onReset={() => transitionTo(() => router.push("/"))}
-        />
-      )}
-      {step === "review" && (
-        <CallSummaryReview prepData={prepData} onSubmit={handleReviewSubmit} />
-      )}
+      <ClarificationChat
+        initialDescription=""
+        onComplete={handleClarificationComplete}
+        onReset={() => transitionTo(() => router.push("/"))}
+      />
     </main>
   );
 }
