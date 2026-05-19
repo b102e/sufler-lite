@@ -7,7 +7,9 @@ import TypingDots from "@/components/common/TypingDots";
 const MAX_USER_MESSAGES = 10;
 const NEAR_BOTTOM_THRESHOLD = 80; // px from bottom
 
-type UIMessage = { role: "user" | "assistant"; text: string };
+type UIMessage =
+  | { role: "user" | "assistant"; text: string }
+  | { role: "reading-question" };
 
 type Props = {
   initialDescription: string;
@@ -85,9 +87,10 @@ export default function ClarificationChat({ initialDescription, onComplete, onRe
       if (data.budget) setBudget(data.budget);
 
       if (data.is_ready_for_call) {
-        // Skip "ready" message — show reading mode question instead
+        // Insert reading-question into the message stream (preserves order)
         setIsReady(true);
         setReadingStep("asking");
+        setUiMessages(prev => [...prev, { role: "reading-question" as const }]);
       } else {
         setUiMessages((prev) => [...prev, { role: "assistant", text: displayMessage }]);
         setTimeout(() => inputRef.current?.focus(), 80);
@@ -106,6 +109,10 @@ export default function ClarificationChat({ initialDescription, onComplete, onRe
   function handleSend() {
     const trimmed = input.trim();
     if (!trimmed || loading || budget.is_hard_limit || isReady) return;
+
+    // Guard against duplicate sends (double-tap, Enter + button click)
+    const lastMsg = uiMessages[uiMessages.length - 1];
+    if (lastMsg && "text" in lastMsg && lastMsg.role === "user" && lastMsg.text === trimmed) return;
 
     const userTurn: ChatTurn = { role: "user", content: trimmed };
     const nextMessages = [...apiMessages, userTurn];
@@ -161,72 +168,75 @@ export default function ClarificationChat({ initialDescription, onComplete, onRe
             onScroll={handleScroll}
             className="h-full overflow-y-auto px-4 py-5 space-y-3"
           >
-            {uiMessages.map((msg, i) => (
-              <div key={i} className={`flex anim-fade-up ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-                <div
-                  className={`max-w-[82%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
-                    msg.role === "assistant"
-                      ? "bg-cb-dark-gray text-cb-text rounded-tl-sm"
-                      : "bg-cb-emerald text-cb-bg rounded-tr-sm"
-                  }`}
-                >
-                  {msg.text}
+            {uiMessages.map((msg, i) => {
+              // Special reading-question bubble — rendered in correct stream position
+              if (msg.role === "reading-question") {
+                return (
+                  <div key={i} className="flex justify-start anim-fade-up">
+                    <div className="max-w-[90%] rounded-2xl rounded-tl-sm bg-cb-dark-gray px-4 py-4">
+                      <p className="text-sm text-cb-text leading-relaxed mb-3">
+                        Как вам удобнее читать фразы во время звонка?
+                      </p>
+                      <div className="space-y-2">
+                        {(["translit", "italian"] as const).map((mode) => {
+                          const isSelected = selectedReadMode === mode;
+                          const isOther = selectedReadMode !== null && !isSelected;
+                          return (
+                            <button
+                              key={mode}
+                              type="button"
+                              onClick={() => {
+                                if (readingStep === "asking") {
+                                  handleReadModeSelect(mode);
+                                } else {
+                                  setSelectedReadMode(mode);
+                                  try { sessionStorage.setItem("sufler:readMode", mode); } catch { /* ignore */ }
+                                }
+                              }}
+                              className={`w-full text-left rounded-xl p-3 border transition-all duration-200 ${
+                                isSelected
+                                  ? "border-cb-emerald bg-cb-elevated"
+                                  : isOther
+                                  ? "border-cb-dark-gray bg-cb-elevated opacity-40"
+                                  : "border-cb-dark-gray bg-cb-elevated hover:border-cb-emerald/60"
+                              }`}
+                            >
+                              <p className={`text-sm font-medium ${isSelected ? "text-cb-emerald" : "text-cb-text"}`}>
+                                {mode === "translit" ? "Русскими буквами" : "На итальянском"}
+                              </p>
+                              <p className="text-xs text-cb-muted mt-1">
+                                {mode === "translit"
+                                  ? "буонджо́рно, ворре́й ордина́ре..."
+                                  : "Buongiorno, vorrei ordinare..."}
+                              </p>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+
+              return (
+                <div key={i} className={`flex anim-fade-up ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+                  <div
+                    className={`max-w-[82%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
+                      msg.role === "assistant"
+                        ? "bg-cb-dark-gray text-cb-text rounded-tl-sm"
+                        : "bg-cb-emerald text-cb-bg rounded-tr-sm"
+                    }`}
+                  >
+                    {msg.text}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
 
             {loading && (
               <div className="flex justify-start">
                 <div className="bg-cb-dark-gray rounded-2xl rounded-tl-sm px-4 py-3.5">
                   <TypingDots />
-                </div>
-              </div>
-            )}
-
-            {/* Reading mode question — appears when AI is ready */}
-            {readingStep !== "idle" && (
-              <div className="flex justify-start anim-fade-up">
-                <div className="max-w-[90%] rounded-2xl rounded-tl-sm bg-cb-dark-gray px-4 py-4">
-                  <p className="text-sm text-cb-text leading-relaxed mb-3">
-                    Как вам удобнее читать фразы во время звонка?
-                  </p>
-                  <div className="space-y-2">
-                    {(["translit", "italian"] as const).map((mode) => {
-                      const isSelected = selectedReadMode === mode;
-                      const isOther = selectedReadMode !== null && !isSelected;
-                      return (
-                        <button
-                          key={mode}
-                          type="button"
-                          onClick={() => {
-                            if (readingStep === "asking") {
-                              handleReadModeSelect(mode);
-                            } else {
-                              // Allow changing selection after answered
-                              setSelectedReadMode(mode);
-                              try { sessionStorage.setItem("sufler:readMode", mode); } catch { /* ignore */ }
-                            }
-                          }}
-                          className={`w-full text-left rounded-xl p-3 border transition-all duration-200 ${
-                            isSelected
-                              ? "border-cb-emerald bg-cb-elevated"
-                              : isOther
-                              ? "border-cb-dark-gray bg-cb-elevated opacity-40"
-                              : "border-cb-dark-gray bg-cb-elevated hover:border-cb-emerald/60"
-                          }`}
-                        >
-                          <p className={`text-sm font-medium ${isSelected ? "text-cb-emerald" : "text-cb-text"}`}>
-                            {mode === "translit" ? "Русскими буквами" : "На итальянском"}
-                          </p>
-                          <p className="text-xs text-cb-muted mt-1">
-                            {mode === "translit"
-                              ? "буонджо́рно, ворре́й ордина́ре..."
-                              : "Buongiorno, vorrei ordinare..."}
-                          </p>
-                        </button>
-                      );
-                    })}
-                  </div>
                 </div>
               </div>
             )}
