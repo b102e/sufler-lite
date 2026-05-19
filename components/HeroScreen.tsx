@@ -10,7 +10,7 @@ type Props = {
 
 export default function HeroScreen({ onStart, className = "" }: Props) {
   return (
-    <div className={`min-h-screen bg-cb-bg flex flex-col items-center justify-center px-6 ${className}`}>
+    <div className={`min-h-screen bg-cb-bg flex flex-col items-center justify-center px-6 pb-10 ${className}`}>
       <div className="w-full max-w-sm flex flex-col items-center">
 
         <div className="flex justify-center pt-10 pb-6">
