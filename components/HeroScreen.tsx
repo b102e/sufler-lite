@@ -21,6 +21,7 @@ export default function HeroScreen({ onStart, className = "" }: Props) {
             width={160}
             className="object-contain"
             style={{ background: "transparent" }}
+            unoptimized
             priority
           />
         </div>
