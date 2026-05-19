@@ -13,23 +13,24 @@ export default function HeroScreen({ onStart, className = "" }: Props) {
     <div className={`min-h-screen bg-cb-bg flex flex-col items-center justify-center px-6 pb-10 ${className}`}>
       <div className="w-full max-w-sm flex flex-col items-center">
 
-        <div className="flex flex-col items-center pt-10 pb-6">
+        <div className="flex items-center justify-between px-4 pt-8 pb-6 w-full">
+          <Image
+            src="/italyanskaya-versiya.svg"
+            alt="Итальянская версия"
+            height={32}
+            width={160}
+            className="object-contain"
+            priority
+          />
           <Image
             src="/logo.png"
             alt="Суфлёр"
-            height={48}
-            width={160}
+            height={40}
+            width={72}
             className="object-contain"
             style={{ background: "transparent" }}
             unoptimized
             priority
-          />
-          <Image
-            src="/italyanskaya-versiya.svg"
-            alt="Итальянская версия"
-            height={20}
-            width={100}
-            className="object-contain mt-2 opacity-70"
           />
         </div>
 
