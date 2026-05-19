@@ -13,7 +13,7 @@ export default function HowItWorksCarousel({ className = "" }: { className?: str
 
   const goTo = useCallback(async (index: number) => {
     setIsVisible(false);
-    await new Promise(r => setTimeout(r, 200));
+    await new Promise(r => setTimeout(r, 600)); // fade to dark
     setCurrent(index);
     setIsVisible(true);
   }, []);
@@ -57,7 +57,7 @@ export default function HowItWorksCarousel({ className = "" }: { className?: str
         </button>
 
         <div
-          style={{ opacity: isVisible ? 1 : 0, transition: "opacity 200ms ease" }}
+          style={{ opacity: isVisible ? 1 : 0, transition: "opacity 600ms ease" }}
           className="absolute inset-0"
         >
           <Image
