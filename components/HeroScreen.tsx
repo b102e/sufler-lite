@@ -15,21 +15,21 @@ export default function HeroScreen({ onStart, className = "" }: Props) {
 
         <div className="flex items-center justify-between px-4 pt-8 pb-6 w-full">
           <Image
-            src="/italyanskaya-versiya.svg"
-            alt="Итальянская версия"
-            height={32}
-            width={160}
-            className="object-contain"
-            priority
-          />
-          <Image
             src="/logo.png"
             alt="Суфлёр"
-            height={40}
-            width={72}
+            height={32}
+            width={110}
             className="object-contain"
             style={{ background: "transparent" }}
             unoptimized
+            priority
+          />
+          <Image
+            src="/italyanskaya-versiya.svg"
+            alt="Итальянская версия"
+            height={24}
+            width={140}
+            className="object-contain"
             priority
           />
         </div>
