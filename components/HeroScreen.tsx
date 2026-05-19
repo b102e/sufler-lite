@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import HowItWorksCarousel from "@/components/HowItWorksCarousel";
 
 type Props = {
@@ -11,6 +12,17 @@ export default function HeroScreen({ onStart, className = "" }: Props) {
   return (
     <div className={`min-h-screen bg-cb-bg flex flex-col items-center justify-center px-6 ${className}`}>
       <div className="w-full max-w-sm flex flex-col items-center">
+
+        <div className="flex justify-center pt-6 pb-2">
+          <Image
+            src="/logo.png"
+            alt="Суфлёр"
+            height={36}
+            width={66}
+            className="object-contain"
+            priority
+          />
+        </div>
 
         <h1 className="text-3xl font-bold tracking-tight text-cb-text text-center">
           Звони в Италии даже с нулевым итальянским
