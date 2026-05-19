@@ -15,7 +15,7 @@ export default function HeroScreen({ onStart, className = "" }: Props) {
         </h1>
 
         <p className="text-base text-cb-muted text-center mt-3 max-w-xs mx-auto">
-          Суфлёр подскажет фразу —<br />ты просто читаешь вслух.
+          Суфлёр подскажет фразу.<br />Ты просто читаешь вслух.
         </p>
 
         {/* HowItWorks компонент сюда */}
