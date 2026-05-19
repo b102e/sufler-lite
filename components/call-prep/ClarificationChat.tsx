@@ -198,8 +198,15 @@ export default function ClarificationChat({ initialDescription, onComplete, onRe
                         <button
                           key={mode}
                           type="button"
-                          onClick={() => readingStep === "asking" && handleReadModeSelect(mode)}
-                          disabled={readingStep === "answered"}
+                          onClick={() => {
+                            if (readingStep === "asking") {
+                              handleReadModeSelect(mode);
+                            } else {
+                              // Allow changing selection after answered
+                              setSelectedReadMode(mode);
+                              try { sessionStorage.setItem("sufler:readMode", mode); } catch { /* ignore */ }
+                            }
+                          }}
                           className={`w-full text-left rounded-xl p-3 border transition-all duration-200 ${
                             isSelected
                               ? "border-cb-emerald bg-cb-elevated"
