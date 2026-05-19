@@ -10,7 +10,8 @@ const NEAR_BOTTOM_THRESHOLD = 80; // px from bottom
 type UIMessage =
   | { role: "user" | "assistant"; text: string }
   | { role: "reading-question" }
-  | { role: "ready-message" };
+  | { role: "ready-message" }
+  | { role: "instruction"; organization: string; goal: string };
 
 type Props = {
   initialDescription: string;
@@ -137,7 +138,15 @@ export default function ClarificationChat({ initialDescription, onComplete, onRe
   function handleReadModeSelect(mode: "translit" | "italian") {
     setSelectedReadMode(mode);
     try { sessionStorage.setItem("sufler:readMode", mode); } catch { /* ignore */ }
-    setUiMessages(prev => [...prev, { role: "ready-message" as const }]);
+    setUiMessages(prev => [
+      ...prev,
+      { role: "ready-message" as const },
+      {
+        role: "instruction" as const,
+        organization: profile.organization ?? "",
+        goal: profile.call_goal ?? "",
+      },
+    ]);
     setReadingStep("answered");
   }
 
@@ -263,6 +272,27 @@ export default function ClarificationChat({ initialDescription, onComplete, onRe
                           </div>
                         </div>
                       )}
+                    </div>
+                  </div>
+                );
+              }
+
+              // Instruction card
+              if (msg.role === "instruction") {
+                const { organization, goal } = msg;
+                const shortGoal = goal.length > 50 ? goal.slice(0, 50) + "..." : goal;
+                return (
+                  <div key={i} className="anim-fade-up mx-2 mt-2">
+                    <div className="bg-cb-card border border-cb-dark-gray rounded-2xl p-4">
+                      <div className="text-cb-text font-semibold text-base">📞 {organization || "Звонок"}</div>
+                      {shortGoal && <div className="text-cb-muted text-sm mt-0.5">{shortGoal}</div>}
+                      <div className="border-t border-cb-dark-gray my-3" />
+                      <p className="text-cb-muted text-sm leading-relaxed">
+                        Положите суфлёр рядом с телефоном с которого будете звонить.
+                        Поставьте его на громкую связь во время звонка.
+                        <br /><br />
+                        Ваша первая фраза уже готова — прочитайте её когда вам ответят.
+                      </p>
                     </div>
                   </div>
                 );

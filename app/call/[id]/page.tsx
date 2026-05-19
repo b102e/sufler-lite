@@ -85,7 +85,6 @@ export default function CallPage() {
   const prepSessionRef = useRef<PrepSession>(prepSession ?? {});
   prepSessionRef.current = prepSession ?? {};
 
-  const [showModal, setShowModal] = useState(true);
   const [readMode, setReadMode] = useState<"translit" | "italian">(() => {
     try { return (sessionStorage.getItem("sufler:readMode") as "translit" | "italian") ?? "italian"; }
     catch { return "italian"; }
@@ -243,15 +242,16 @@ export default function CallPage() {
 
   // ── Modal dismiss → fetch opening suggestion ──────────────────────────────
 
-  function handleModalDismiss() {
-    setShowModal(false);
+  // ── Fetch opening suggestion on mount ────────────────────────────────────
+
+  useEffect(() => {
     if (openingFetchedRef.current) return;
     openingFetchedRef.current = true;
     const msgId = uid();
     currentUserMsgIdRef.current = msgId;
     setMessages(prev => [...prev, { id: msgId, kind: "user", suggestion: null }]);
     callSuggestAPI(null, msgId, false).then(() => updatePhase("user_turn"));
-  }
+  }, [callSuggestAPI]);
 
   // ── Auto-scroll on new message or phase change ────────────────────────────
 
@@ -518,27 +518,6 @@ export default function CallPage() {
   const org = prepSession.organization || "организацию";
 
   return (
-    <>
-    {showModal && (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm px-6">
-        <div className="w-full max-w-sm rounded-2xl bg-cb-card border border-cb-dark-gray px-6 py-7 text-center">
-          <p className="text-base font-semibold text-cb-text leading-snug mb-2">
-            Наберите {org}
-          </p>
-          <p className="text-sm text-cb-muted leading-relaxed mb-6">
-            Поставьте на громкую связь и положите телефон рядом.
-            Затем произнесите первую заготовленную фразу.
-          </p>
-          <button
-            type="button"
-            onClick={handleModalDismiss}
-            className="w-full h-12 rounded-xl bg-cb-emerald text-sm font-semibold text-cb-bg transition active:scale-[0.99]"
-          >
-            Понятно
-          </button>
-        </div>
-      </div>
-    )}
     <main className="mx-auto flex h-screen w-full max-w-md flex-col">
 
       {/* Fixed header */}
@@ -752,6 +731,5 @@ export default function CallPage() {
       </div>
 
     </main>
-    </>
   );
 }
