@@ -24,6 +24,8 @@ export default function ClarificationChat({ initialDescription, onComplete, onRe
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(true);
   const [isNearBottom, setIsNearBottom] = useState(true);
+  const [readingStep, setReadingStep] = useState<"idle" | "asking" | "answered">("idle");
+  const [selectedReadMode, setSelectedReadMode] = useState<"translit" | "italian" | null>(null);
 
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -80,10 +82,14 @@ export default function ClarificationChat({ initialDescription, onComplete, onRe
 
       setApiMessages([...messages, { role: "assistant", content: displayMessage }]);
       setProfile(data.profile);
-      setIsReady(data.is_ready_for_call);
       if (data.budget) setBudget(data.budget);
-      setUiMessages((prev) => [...prev, { role: "assistant", text: displayMessage }]);
-      if (!data.is_ready_for_call) {
+
+      if (data.is_ready_for_call) {
+        // Skip "ready" message — show reading mode question instead
+        setIsReady(true);
+        setReadingStep("asking");
+      } else {
+        setUiMessages((prev) => [...prev, { role: "assistant", text: displayMessage }]);
         setTimeout(() => inputRef.current?.focus(), 80);
       }
     } catch {
@@ -108,6 +114,13 @@ export default function ClarificationChat({ initialDescription, onComplete, onRe
     setApiMessages(nextMessages);
     setInput("");
     fetchNextMessage(nextMessages);
+  }
+
+  function handleReadModeSelect(mode: "translit" | "italian") {
+    setSelectedReadMode(mode);
+    try { sessionStorage.setItem("sufler:readMode", mode); } catch { /* ignore */ }
+    setUiMessages(prev => [...prev, { role: "assistant", text: "Отлично. Готово — можно переходить к звонку." }]);
+    setReadingStep("answered");
   }
 
   function handleKeyDown(e: KeyboardEvent<HTMLInputElement>) {
@@ -170,6 +183,47 @@ export default function ClarificationChat({ initialDescription, onComplete, onRe
               </div>
             )}
 
+            {/* Reading mode question — appears when AI is ready */}
+            {readingStep !== "idle" && (
+              <div className="flex justify-start anim-fade-up">
+                <div className="max-w-[90%] rounded-2xl rounded-tl-sm bg-cb-dark-gray px-4 py-4">
+                  <p className="text-sm text-cb-text leading-relaxed mb-3">
+                    Как вам удобнее читать фразы во время звонка?
+                  </p>
+                  <div className="space-y-2">
+                    {(["translit", "italian"] as const).map((mode) => {
+                      const isSelected = selectedReadMode === mode;
+                      const isOther = selectedReadMode !== null && !isSelected;
+                      return (
+                        <button
+                          key={mode}
+                          type="button"
+                          onClick={() => readingStep === "asking" && handleReadModeSelect(mode)}
+                          disabled={readingStep === "answered"}
+                          className={`w-full text-left rounded-xl p-3 border transition-all duration-200 ${
+                            isSelected
+                              ? "border-cb-emerald bg-cb-elevated"
+                              : isOther
+                              ? "border-cb-dark-gray bg-cb-elevated opacity-40"
+                              : "border-cb-dark-gray bg-cb-elevated hover:border-cb-emerald/60"
+                          }`}
+                        >
+                          <p className={`text-sm font-medium ${isSelected ? "text-cb-emerald" : "text-cb-text"}`}>
+                            {mode === "translit" ? "Русскими буквами" : "На итальянском"}
+                          </p>
+                          <p className="text-xs text-cb-muted mt-1">
+                            {mode === "translit"
+                              ? "буонджо́рно, ворре́й ордина́ре..."
+                              : "Buongiorno, vorrei ordinare..."}
+                          </p>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div ref={bottomRef} />
           </div>
 
@@ -188,7 +242,7 @@ export default function ClarificationChat({ initialDescription, onComplete, onRe
 
         {/* Sticky input area */}
         <div className="shrink-0 border-t border-cb-dark-gray px-4 pt-4 pb-8">
-          {isReady ? (
+          {isReady && readingStep === "answered" ? (
             <button
               type="button"
               onClick={() => onComplete(profile)}

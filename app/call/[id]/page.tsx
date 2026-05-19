@@ -86,7 +86,6 @@ export default function CallPage() {
   prepSessionRef.current = prepSession ?? {};
 
   const [showModal, setShowModal] = useState(true);
-  const [showReadModal, setShowReadModal] = useState(false);
   const [readMode, setReadMode] = useState<"translit" | "italian">(() => {
     try { return (sessionStorage.getItem("sufler:readMode") as "translit" | "italian") ?? "italian"; }
     catch { return "italian"; }
@@ -246,20 +245,11 @@ export default function CallPage() {
 
   function handleModalDismiss() {
     setShowModal(false);
-    setShowReadModal(true);
-  }
-
-  function handleReadModeSelect(mode: "translit" | "italian") {
-    setReadMode(mode);
-    try { sessionStorage.setItem("sufler:readMode", mode); } catch { /* ignore */ }
-    setShowReadModal(false);
     if (openingFetchedRef.current) return;
     openingFetchedRef.current = true;
-
     const msgId = uid();
     currentUserMsgIdRef.current = msgId;
     setMessages(prev => [...prev, { id: msgId, kind: "user", suggestion: null }]);
-
     callSuggestAPI(null, msgId, false).then(() => updatePhase("user_turn"));
   }
 
@@ -546,35 +536,6 @@ export default function CallPage() {
           >
             Понятно
           </button>
-        </div>
-      </div>
-    )}
-    {showReadModal && (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm px-6">
-        <div className="w-full max-w-sm rounded-2xl bg-cb-card border border-cb-dark-gray px-6 py-7">
-          <p className="text-base font-semibold text-cb-text text-center mb-5">
-            Как вам удобнее читать?
-          </p>
-          <div className="rounded-xl border border-cb-dark-gray bg-cb-dark-gray px-4 py-3 mb-5 space-y-1">
-            <p className="text-[15px] font-semibold text-cb-text">буонджо́рно, ворре́й ордина́ре...</p>
-            <p className="text-[14px] text-cb-emerald">Buongiorno, vorrei ordinare...</p>
-          </div>
-          <div className="space-y-2">
-            <button
-              type="button"
-              onClick={() => handleReadModeSelect("translit")}
-              className="w-full h-12 rounded-xl bg-cb-emerald text-sm font-semibold text-cb-bg transition active:scale-[0.99]"
-            >
-              Русскими буквами
-            </button>
-            <button
-              type="button"
-              onClick={() => handleReadModeSelect("italian")}
-              className="w-full h-12 rounded-xl border border-cb-dark-gray text-sm font-medium text-cb-muted transition active:scale-[0.99]"
-            >
-              На итальянском
-            </button>
-          </div>
         </div>
       </div>
     )}
