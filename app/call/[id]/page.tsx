@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
+import Image from "next/image";
 import { useCallSession } from "@/hooks/useCallSession";
 import type { ChosenOption } from "@/lib/transcript";
 import { SUGGEST_FALLBACK, type SuggestSingle, type HistoryEntry } from "@/lib/call-suggest";
@@ -55,7 +56,6 @@ const EXIT_OPTIONS: SuggestSingle[] = [
   },
 ];
 
-const SYSTEM_HINT = "Положите телефон рядом с микрофоном суфлёра. Говорите в телефон — суфлёр запишет собеседника.";
 const MAX_TRANSCRIPT = 8;
 
 const FILLER_PHRASES = [
@@ -96,9 +96,7 @@ export default function CallPage() {
     catch { return "italian"; }
   });
   const [phase, setPhase] = useState<Phase>("idle");
-  const [messages, setMessages] = useState<ChatMsg[]>([
-    { id: "sys-0", kind: "system", text: SYSTEM_HINT },
-  ]);
+  const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [exitPending, setExitPending] = useState(false);
   const [hasFinalText, setHasFinalText] = useState(false);
   const [currentFiller, setCurrentFiller] = useState<{ it: string; ru: string } | null>(null);
@@ -527,20 +525,28 @@ export default function CallPage() {
     <main className="mx-auto flex h-screen w-full max-w-md flex-col">
 
       {/* Fixed header */}
-      <header className="shrink-0 px-4 pt-8 pb-4 border-b border-cb-dark-gray">
-        <p className="text-xs uppercase tracking-widest text-cb-muted">Суфлер</p>
-        <h1 className="mt-1 text-lg font-semibold text-cb-text">
-          {prepSession.organization || "Звонок"}
-        </h1>
-        {(prepSession.goal ?? prepSession.call_goal) && (
-          <p className="mt-0.5 text-sm text-cb-muted line-clamp-1">
-            {prepSession.goal ?? prepSession.call_goal}
-          </p>
-        )}
+      <header className="shrink-0 px-4 pt-8 pb-4 border-b border-cb-dark-gray flex items-center justify-between">
+        <Image
+          src="/logo.png"
+          alt="Суфлёр"
+          height={32}
+          width={110}
+          className="object-contain"
+          style={{ background: "transparent" }}
+          unoptimized
+          priority
+        />
+        <button
+          type="button"
+          onClick={doEndCall}
+          className="text-xs text-red-400/50 hover:text-red-400/80 transition-colors duration-200"
+        >
+          ✕ Выйти из суфлёра
+        </button>
       </header>
 
       {/* Scrollable chat — pb accounts for fixed footer */}
-      <div className="relative flex-1 overflow-y-auto px-4 py-5 pb-16 space-y-3">
+      <div className="relative flex-1 overflow-y-auto px-4 py-5 space-y-3">
 
         {messages.length <= 1 && phase === "listening" && (
           <p className="text-sm text-cb-muted text-center py-8">Ждём собеседника...</p>
@@ -729,17 +735,6 @@ export default function CallPage() {
         <div ref={bottomRef} />
       </div>
 
-      {/* Fixed exit footer — outside scroll, with backdrop blur */}
-      <div className="shrink-0 backdrop-blur-sm bg-cb-bg/90 border-t border-cb-dark-gray px-4 pt-3 pb-7">
-        <button
-          type="button"
-          onClick={doEndCall}
-          className="flex items-center gap-2 text-xs text-cb-muted opacity-40 hover:opacity-100 hover:text-cb-text transition-all duration-200 active:scale-[0.97]"
-        >
-          <span className="text-cb-muted">✕</span>
-          <span>Выйти из суфлёра</span>
-        </button>
-      </div>
 
     </main>
   );
