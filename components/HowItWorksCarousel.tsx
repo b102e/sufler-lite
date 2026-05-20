@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import Image from "next/image";
 
 const TOTAL = 4;
@@ -11,11 +11,18 @@ export default function HowItWorksCarousel({ className = "" }: { className?: str
   const [isVisible, setIsVisible] = useState(true);
   const [isPaused, setIsPaused] = useState(false);
 
-  const goTo = useCallback(async (index: number) => {
+  const fadeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => () => { if (fadeTimerRef.current) clearTimeout(fadeTimerRef.current); }, []);
+
+  const goTo = useCallback((index: number) => {
+    if (fadeTimerRef.current) clearTimeout(fadeTimerRef.current);
     setIsVisible(false);
-    await new Promise(r => setTimeout(r, 600)); // fade to dark
-    setCurrent(index);
-    setIsVisible(true);
+    fadeTimerRef.current = setTimeout(() => {
+      setCurrent(index);
+      setIsVisible(true);
+      fadeTimerRef.current = null;
+    }, 600);
   }, []);
 
   const next = useCallback(() => {

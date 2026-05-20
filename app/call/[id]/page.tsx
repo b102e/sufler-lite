@@ -618,33 +618,37 @@ export default function CallPage() {
 
                     {/* Buttons — only in user_turn, only last bubble */}
                     {isCurrent && phase === "user_turn" && !exitPending && (
-                      <div className="mt-4 pt-3 border-t border-cb-dark-gray anim-fade-up-fast" style={{ animationDelay: "80ms" }}>
+                      <div className="mt-4 pt-3 border-t border-cb-dark-gray">
                         <div className="grid grid-cols-2 gap-2">
                           <button
                             type="button"
                             onClick={() => handleISaidIt(suggestion)}
-                            className="h-10 rounded-xl bg-cb-emerald text-[13px] font-semibold text-cb-bg transition-all duration-150 hover:scale-[1.02] active:scale-[0.96]"
+                            className="h-10 rounded-xl bg-cb-emerald text-[13px] font-semibold text-cb-bg transition-all duration-150 hover:scale-[1.02] active:scale-[0.96] anim-fade-up-fast"
+                            style={{ animationDelay: "0ms" }}
                           >
                             Я это сказал
                           </button>
                           <button
                             type="button"
                             onClick={handleRegenerate}
-                            className="h-10 rounded-xl bg-cb-dark-gray text-[13px] text-cb-text border border-cb-emerald/30 transition-all duration-150 hover:scale-[1.01] hover:border-cb-emerald active:scale-[0.99]"
+                            className="h-10 rounded-xl bg-cb-dark-gray text-[13px] text-cb-text border border-cb-emerald/30 transition-all duration-150 hover:scale-[1.01] hover:border-cb-emerald active:scale-[0.99] anim-fade-up-fast"
+                            style={{ animationDelay: "40ms" }}
                           >
                             Другой вариант
                           </button>
                           <button
                             type="button"
                             onClick={handleDidntHear}
-                            className="h-10 rounded-xl bg-cb-orange/20 text-[13px] text-cb-orange border border-cb-orange/40 transition-all duration-150 hover:bg-cb-orange hover:text-cb-bg hover:scale-[1.01] active:scale-[0.99]"
+                            className="h-10 rounded-xl bg-cb-orange/20 text-[13px] text-cb-orange border border-cb-orange/40 transition-all duration-150 hover:bg-cb-orange hover:text-cb-bg hover:scale-[1.01] active:scale-[0.99] anim-fade-up-fast"
+                            style={{ animationDelay: "80ms" }}
                           >
                             Не расслышал
                           </button>
                           <button
                             type="button"
                             onClick={handleUrgentExit}
-                            className="h-10 rounded-xl bg-cb-dark-gray text-[13px] text-cb-text border border-cb-emerald/30 transition-all duration-150 hover:scale-[1.01] hover:border-cb-emerald active:scale-[0.99]"
+                            className="h-10 rounded-xl bg-cb-dark-gray text-[13px] text-cb-text border border-cb-emerald/30 transition-all duration-150 hover:scale-[1.01] hover:border-cb-emerald active:scale-[0.99] anim-fade-up-fast"
+                            style={{ animationDelay: "120ms" }}
                           >
                             Завершить
                           </button>
@@ -689,7 +693,7 @@ export default function CallPage() {
               disabled={!hasFinalText}
               className={`w-full py-3 rounded-xl border border-cb-dark-gray bg-cb-dark-gray text-sm font-medium text-cb-text transition-all duration-200 active:scale-[0.97] flex items-center justify-center gap-2 ${!hasFinalText ? "opacity-40 cursor-not-allowed" : "hover:bg-cb-elevated"}`}
             >
-              <span>🎙</span>
+              <span className="w-2 h-2 rounded-full bg-cb-emerald animate-pulse shrink-0" />
               Собеседник закончил фразу
             </button>
             <button
@@ -704,7 +708,7 @@ export default function CallPage() {
 
         {/* Blur overlay when exit options open */}
         {phase === "exit_options" && (
-          <div className="absolute inset-0 bg-cb-bg/60 backdrop-blur-sm z-10 pointer-events-none" />
+          <div className="absolute inset-0 bg-cb-bg/60 backdrop-blur-sm z-10 pointer-events-none transition-all duration-300" />
         )}
 
         {/* Exit phrase picker */}
