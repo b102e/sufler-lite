@@ -285,6 +285,7 @@ export default function CallPage() {
       optionText: suggestion.italian,
       optionIndex: chosenOptionsRef.current.length,
       chosenAt: new Date().toISOString(),
+      translation: suggestion.russian || undefined,
     };
     chosenOptionsRef.current.push(opt);
     sendOptionChosen(suggestion.italian, opt.optionIndex);
