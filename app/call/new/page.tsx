@@ -7,7 +7,6 @@ import { transitionTo } from "@/lib/transition";
 import { FlowStep, PrepData } from "@/components/call-prep/types";
 import { CallProfile } from "@/lib/call-profile";
 import ClarificationChat from "@/components/call-prep/ClarificationChat";
-import CallSummaryReview from "@/components/call-prep/CallSummaryReview";
 
 const emptyPrepData: PrepData = {
   name: "",

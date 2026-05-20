@@ -690,7 +690,7 @@ export default function CallPage() {
 
         {/* Filler phrase while Claude is generating */}
         {phase === "generating" && currentFiller && (
-          <div className="rounded-xl border border-cb-dark-gray bg-cb-card px-4 py-3 anim-slide-up">
+          <div className="rounded-xl border border-cb-dark-gray bg-cb-card px-4 py-3 anim-fade-up">
             <p className="text-[11px] uppercase tracking-widest text-cb-muted mb-1">Скажите пока:</p>
             <p className="text-[18px] font-semibold text-cb-emerald leading-snug">{currentFiller.it}</p>
             <p className="text-[13px] italic text-cb-muted mt-0.5">{currentFiller.ru}</p>
@@ -699,7 +699,7 @@ export default function CallPage() {
 
         {/* Listening controls — two buttons */}
         {phase === "listening" && (
-          <div className="space-y-2 anim-slide-up">
+          <div className="space-y-2 anim-fade-up">
             <button
               type="button"
               onClick={handleHeStopped}
@@ -726,7 +726,7 @@ export default function CallPage() {
 
         {/* Exit phrase picker */}
         {phase === "exit_options" && (
-          <div className="space-y-2 pt-1 anim-slide-up relative z-20">
+          <div className="space-y-2 pt-1 anim-fade-up relative z-20">
             <p className="text-xs text-cb-muted text-center">Выберите фразу для завершения</p>
             {EXIT_OPTIONS.map((opt, i) => (
               <button

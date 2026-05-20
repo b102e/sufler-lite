@@ -33,15 +33,6 @@ body {
   to   { opacity: 1; transform: translateX(0)   scale(1);    }
 }
 
-@keyframes slide-up {
-  from { opacity: 0; transform: translateY(10px); }
-  to   { opacity: 1; transform: translateY(0);    }
-}
-
-@keyframes page-enter {
-  from { opacity: 0; transform: translateY(6px); }
-  to   { opacity: 1; transform: translateY(0);   }
-}
 
 /* ─────────────────────────────────────────────────────────────────────────────
    `both` fill-mode: applies `from` during delay (prevents flash before start)
@@ -52,8 +43,6 @@ body {
 .anim-fade-up-fast { animation: fade-slide-up 200ms ease-out both; will-change: opacity, transform; }
 .anim-bubble-l     { animation: bubble-left   280ms ease-out both; will-change: opacity, transform; }
 .anim-bubble-r     { animation: bubble-right  320ms ease-out both; will-change: opacity, transform; }
-.anim-slide-up     { animation: slide-up      260ms ease-out both; will-change: opacity, transform; }
-.anim-page         { animation: page-enter    280ms ease-out both; will-change: opacity, transform; }
 
 /* ── View Transitions (Chrome 111+, Safari 18+) ─────────────────────────── */
 

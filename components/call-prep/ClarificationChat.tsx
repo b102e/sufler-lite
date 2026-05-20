@@ -200,7 +200,7 @@ export default function ClarificationChat({ initialDescription, onComplete, onRe
 
   return (
     // fixed inset-0 prevents body scroll entirely; chat is self-contained
-    <div className="fixed inset-0 flex flex-col bg-cb-bg anim-page">
+    <div className="fixed inset-0 flex flex-col bg-cb-bg anim-fade-up">
       <div className="mx-auto w-full max-w-md flex flex-col h-full">
 
         {/* Header */}
