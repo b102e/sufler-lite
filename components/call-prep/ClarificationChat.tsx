@@ -284,8 +284,8 @@ export default function ClarificationChat({ initialDescription, onComplete, onRe
                 return (
                   <div key={i} className="anim-fade-up mx-2 mt-2">
                     <div className="bg-cb-card border border-cb-dark-gray rounded-2xl p-4">
-                      <div className="text-cb-text font-semibold text-base">📞 {organization || "Звонок"}</div>
-                      {shortGoal && <div className="text-cb-muted text-sm mt-0.5">{shortGoal}</div>}
+                      <div className="text-cb-text font-semibold text-base">{organization || "Звонок"}</div>
+                      {goal && <div className="text-cb-muted text-sm mt-0.5">{goal}</div>}
                       <div className="border-t border-cb-dark-gray my-3" />
                       <p className="text-cb-muted text-sm leading-relaxed">
                         Положите суфлёр рядом с телефоном с которого будете звонить.
