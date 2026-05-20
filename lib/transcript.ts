@@ -3,6 +3,7 @@ export type ChosenOption = {
   optionText: string;
   optionIndex: number;
   chosenAt: string;
+  translation?: string;
 };
 
 export type SessionForTranscript = {

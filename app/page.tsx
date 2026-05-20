@@ -156,6 +156,9 @@ export default function HomePage() {
                       {opt.speaker === "counterpart" ? "Собеседник" : "Вы"}
                     </p>
                     <p className="text-sm text-cb-text leading-relaxed">{opt.optionText}</p>
+                    {opt.speaker === "counterpart" && opt.translation && (
+                      <p className="text-[12px] italic text-cb-muted mt-0.5 leading-relaxed">{opt.translation}</p>
+                    )}
                   </div>
                 ))}
               </div>

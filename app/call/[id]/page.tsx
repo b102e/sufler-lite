@@ -110,6 +110,7 @@ export default function CallPage() {
   const currentHeardTextRef  = useRef("");   // heard text for current generating/regenerate cycle
   const currentUserMsgIdRef  = useRef("");   // ID of the current right-side bubble
   const translateAbortRef    = useRef<AbortController | null>(null);
+  const pendingTranslationUpdaters = useRef<Map<string, (t: string) => void>>(new Map());
   const autoStopTimerRef     = useRef<ReturnType<typeof setTimeout> | null>(null);
   const silenceTimerRef      = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastDgFinalRef       = useRef("");  // dedup consecutive identical Deepgram finals
@@ -143,7 +144,12 @@ export default function CallPage() {
       });
       const data = await res.json();
       if (!controller.signal.aborted) {
-        setTranslations(prev => ({ ...prev, [msgId]: data.translation ?? "" }));
+        const t = data.translation ?? "";
+        setTranslations(prev => ({ ...prev, [msgId]: t }));
+        if (t) {
+          pendingTranslationUpdaters.current.get(msgId)?.(t);
+          pendingTranslationUpdaters.current.delete(msgId);
+        }
       }
     } catch (e) {
       if (e instanceof Error && e.name !== "AbortError") {
@@ -409,7 +415,14 @@ export default function CallPage() {
         optionIndex: -1,
         chosenAt: new Date().toISOString(),
       };
+      const optIdx = chosenOptionsRef.current.length;
       chosenOptionsRef.current.push(counterpartOpt);
+      // Register updater so fetchTranslation can write translation into the ref
+      pendingTranslationUpdaters.current.set(cid, (t: string) => {
+        if (chosenOptionsRef.current[optIdx]) {
+          chosenOptionsRef.current[optIdx] = { ...chosenOptionsRef.current[optIdx], translation: t };
+        }
+      });
       sendOptionChosen(heardText, -1); // -1 marks counterpart entry in SQLite
     }
 
