@@ -106,7 +106,8 @@ export default function CallPage() {
   const transcriptRef        = useRef<HistoryEntry[]>([]);
   const startedAtRef         = useRef(new Date().toISOString());
   const chosenOptionsRef     = useRef<ChosenOption[]>([]);
-  const lastFinalTextRef     = useRef("");   // accumulated transcript:finals during listening
+  const lastFinalTextRef     = useRef("");   // full accumulated text across all finals in this cycle
+  const finalChunksRef      = useRef<string[]>([]);  // individual finalized chunks for robust accumulation
   const currentHeardTextRef  = useRef("");   // heard text for current generating/regenerate cycle
   const currentUserMsgIdRef  = useRef("");   // ID of the current right-side bubble
   const translateAbortRef    = useRef<AbortController | null>(null);
@@ -307,6 +308,7 @@ export default function CallPage() {
     // Add live counterpart bubble and start mic
     const counterpartId = uid();
     lastFinalTextRef.current = "";
+    finalChunksRef.current = [];
     lastDgFinalRef.current = "";
     currentPartialRef.current = "";
     currentCounterpartId.current = counterpartId;
@@ -350,14 +352,23 @@ export default function CallPage() {
     startListening((text, isFinal) => {
       if (isFinal) {
         if (!text.trim()) return;
-        // Skip exact duplicate finals (Deepgram repeats is_final with same text)
+        // Skip exact duplicate finals (Deepgram sometimes repeats the same is_final)
         if (text.trim() === lastDgFinalRef.current) return;
         lastDgFinalRef.current = text.trim();
-        // Deepgram sends cumulative text per is_final — check if new text already
-        // includes previous finals to avoid duplication
-        const prev = lastFinalTextRef.current;
-        const isCumulative = prev && text.trim().startsWith(prev.trim());
-        lastFinalTextRef.current = isCumulative ? text.trim() : (prev ? prev + " " + text.trim() : text.trim());
+        // Robust accumulation: collect chunks in an array.
+        // If the new final starts with ALL previously accumulated text, it's a cumulative
+        // update (nova-2 style) — replace last chunk. Otherwise it's a new segment — append.
+        const chunks = finalChunksRef.current;
+        const prevFull = chunks.join(" ");
+        if (prevFull && text.trim().startsWith(prevFull)) {
+          // Cumulative: new text supersedes everything → replace with single chunk
+          finalChunksRef.current = [text.trim()];
+        } else if (prevFull && prevFull.endsWith(text.trim())) {
+          // Already contained (delayed duplicate) → ignore
+        } else {
+          finalChunksRef.current = [...chunks, text.trim()];
+        }
+        lastFinalTextRef.current = finalChunksRef.current.join(" ");
 
         setHasFinalText(true);
         resetSilenceTimer();

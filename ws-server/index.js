@@ -49,7 +49,6 @@ async function startDeepgramSession(browserSocket, sessionId, language = "it") {
     const live = await dg.listen.v1.connect({
       language,
       model: "nova-3",
-      no_delay: true,
       interim_results: true,
       smart_format: false,
       punctuate: false,
