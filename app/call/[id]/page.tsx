@@ -33,6 +33,12 @@ const DIDNT_HEAR: SuggestSingle = {
 
 const EXIT_OPTIONS: SuggestSingle[] = [
   {
+    russian: "Спасибо, до свидания!",
+    italian: "Grazie, arrivederci!",
+    translit: "ГРАцие, арривеДЭрчи!",
+    is_farewell: true,
+  },
+  {
     russian: "Извините, у меня срочный звонок — перезвоню позже",
     italian: "Mi scusi, ho una chiamata urgente — la richiamo",
     translit: "Ми скузи, о уна кьямата урдженте — ла рикьямо",
@@ -534,7 +540,7 @@ export default function CallPage() {
       </header>
 
       {/* Scrollable chat — pb accounts for fixed footer */}
-      <div className="flex-1 overflow-y-auto px-4 py-5 pb-16 space-y-3">
+      <div className="relative flex-1 overflow-y-auto px-4 py-5 pb-16 space-y-3">
 
         {messages.length <= 1 && phase === "listening" && (
           <p className="text-sm text-cb-muted text-center py-8">Ждём собеседника...</p>
@@ -690,9 +696,14 @@ export default function CallPage() {
           </div>
         )}
 
+        {/* Blur overlay when exit options open */}
+        {phase === "exit_options" && (
+          <div className="absolute inset-0 bg-cb-bg/60 backdrop-blur-sm z-10 pointer-events-none" />
+        )}
+
         {/* Exit phrase picker */}
         {phase === "exit_options" && (
-          <div className="space-y-2 pt-1 anim-slide-up">
+          <div className="space-y-2 pt-1 anim-slide-up relative z-20">
             <p className="text-xs text-cb-muted text-center">Выберите фразу для завершения</p>
             {EXIT_OPTIONS.map((opt, i) => (
               <button
