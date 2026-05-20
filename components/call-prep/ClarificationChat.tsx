@@ -44,7 +44,7 @@ export default function ClarificationChat({ initialDescription, onComplete, onRe
 
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const initialized = useRef(false);
 
   // One-time init guard (React 18 Strict Mode double-invoke)
@@ -182,7 +182,7 @@ export default function ClarificationChat({ initialDescription, onComplete, onRe
     }, 2000);
   }
 
-  function handleKeyDown(e: KeyboardEvent<HTMLInputElement>) {
+  function handleKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSend();
@@ -442,15 +442,19 @@ export default function ClarificationChat({ initialDescription, onComplete, onRe
             </div>
           ) : (
             <div className="relative">
-              <input
+              <textarea
                 ref={inputRef}
-                type="text"
+                rows={1}
                 value={input}
-                onChange={(e) => setInput(e.target.value)}
+                onChange={(e) => {
+                  setInput(e.target.value);
+                  e.target.style.height = "auto";
+                  e.target.style.height = `${e.target.scrollHeight}px`;
+                }}
                 onKeyDown={handleKeyDown}
                 placeholder="Введите ответ"
                 disabled={loading}
-                className="w-full rounded-xl border border-cb-dark-gray bg-cb-elevated px-4 py-3 pr-12 text-sm text-cb-text placeholder:text-cb-muted focus:border-cb-emerald focus:outline-none disabled:opacity-40 transition-colors duration-200"
+                className="w-full rounded-xl border border-cb-dark-gray bg-cb-elevated px-4 py-3 pr-12 text-sm text-cb-text placeholder:text-cb-muted focus:border-cb-emerald focus:outline-none disabled:opacity-40 transition-colors duration-200 resize-none overflow-hidden"
               />
               {input.trim() && !loading && (
                 <button
