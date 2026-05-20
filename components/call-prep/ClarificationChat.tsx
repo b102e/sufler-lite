@@ -138,6 +138,9 @@ export default function ClarificationChat({ initialDescription, onComplete, onRe
     setUiMessages((prev) => [...prev, { role: "user", text: trimmed }]);
     setApiMessages(nextMessages);
     setInput("");
+    if (inputRef.current) {
+      inputRef.current.style.height = "auto";
+    }
     fetchNextMessage(nextMessages);
   }
 
@@ -454,7 +457,7 @@ export default function ClarificationChat({ initialDescription, onComplete, onRe
                 onKeyDown={handleKeyDown}
                 placeholder="Введите ответ"
                 disabled={loading}
-                className="w-full rounded-xl border border-cb-dark-gray bg-cb-elevated px-4 py-3 pr-12 text-sm text-cb-text placeholder:text-cb-muted focus:border-cb-emerald focus:outline-none disabled:opacity-40 transition-colors duration-200 resize-none overflow-hidden"
+                className="w-full rounded-xl border border-cb-dark-gray bg-cb-elevated px-4 py-3 pr-12 text-sm text-cb-text placeholder:text-cb-muted focus:border-cb-emerald focus:outline-none disabled:opacity-40 transition-colors duration-200 resize-none overflow-y-auto max-h-32"
               />
               {input.trim() && !loading && (
                 <button
