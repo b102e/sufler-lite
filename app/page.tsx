@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { transitionTo } from "@/lib/transition";
 import { downloadTranscript, formatDateTime, type ChosenOption, type SessionForTranscript } from "@/lib/transcript";
 import HeroScreen from "@/components/HeroScreen";
@@ -122,13 +123,16 @@ export default function HomePage() {
       <main className="mx-auto flex h-screen w-full max-w-md flex-col px-4 pt-8 pb-6 overflow-hidden bg-cb-bg">
 
         <header className="shrink-0 mb-4">
-          <p className="text-xs uppercase tracking-widest text-cb-muted">Суфлер</p>
-          <h1 className="mt-1 text-xl font-semibold text-cb-text">
-            {result.organization || "Звонок завершён"}
-          </h1>
-          {result.goal && (
-            <p className="mt-0.5 text-sm text-cb-muted line-clamp-1">{result.goal}</p>
-          )}
+          <Image
+            src="/logo.png"
+            alt="Суфлёр"
+            height={32}
+            width={110}
+            className="object-contain"
+            style={{ background: "transparent" }}
+            unoptimized
+            priority
+          />
         </header>
 
         <article className="flex-1 min-h-0 flex flex-col rounded-2xl border border-cb-dark-gray bg-cb-card p-5 mb-4">
