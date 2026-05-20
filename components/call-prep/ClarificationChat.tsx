@@ -144,15 +144,14 @@ export default function ClarificationChat({ initialDescription, onComplete, onRe
   function handleReadModeSelect(mode: "translit" | "italian") {
     setSelectedReadMode(mode);
     try { sessionStorage.setItem("sufler:readMode", mode); } catch { /* ignore */ }
-    setUiMessages(prev => [
-      ...prev,
-      { role: "ready-message" as const },
-      {
+    setUiMessages(prev => [...prev, { role: "ready-message" as const }]);
+    setTimeout(() => {
+      setUiMessages(prev => [...prev, {
         role: "instruction" as const,
         organization: profile.organization ?? "",
         goal: profile.call_goal ?? "",
-      },
-    ]);
+      }]);
+    }, 700);
     setReadingStep("answered");
   }
 
