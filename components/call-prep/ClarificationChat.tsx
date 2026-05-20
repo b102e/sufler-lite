@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback, useMemo, KeyboardEvent } from "react";
+import Image from "next/image";
 import { BudgetState, CallProfile, ChatApiResponse, ChatTurn, emptyProfile } from "@/lib/call-profile";
 import TypingDots from "@/components/common/TypingDots";
 
@@ -89,10 +90,15 @@ export default function ClarificationChat({ initialDescription, onComplete, onRe
       const data: ChatApiResponse = await res.json();
 
       // If model says ready but still wrote a question — sanitize the message
-      const displayMessage =
+      const rawMessage =
         data.is_ready_for_call && data.assistant_message.trimEnd().endsWith("?")
           ? "Готово. Можно переходить к звонку."
           : data.assistant_message;
+
+      // Prepend intro only on the very first AI message
+      const displayMessage = messages.length === 0
+        ? `Давайте подготовимся к звонку. Я вам в этом помогу.\n\n${rawMessage}`
+        : rawMessage;
 
       setApiMessages([...messages, { role: "assistant", content: displayMessage }]);
       setProfile(data.profile);
@@ -196,16 +202,22 @@ export default function ClarificationChat({ initialDescription, onComplete, onRe
       <div className="mx-auto w-full max-w-md flex flex-col h-full">
 
         {/* Header */}
-        <header className="px-4 pt-10 pb-3 border-b border-cb-dark-gray shrink-0">
-          <p className="text-xs uppercase tracking-widest text-cb-muted">Суфлер</p>
-          <div className="flex items-baseline justify-between mt-1">
-            <h1 className="text-lg font-semibold text-cb-text">Подготовка звонка</h1>
-            {remaining <= 5 && remaining > 0 && !isReady && (
-              <p className="text-xs text-cb-muted">
-                {remaining <= 2 ? "Почти готово" : `Осталось уточнений: ${remaining}`}
-              </p>
-            )}
-          </div>
+        <header className="px-4 pt-8 pb-3 border-b border-cb-dark-gray shrink-0 flex items-center justify-between">
+          <Image
+            src="/logo.png"
+            alt="Суфлёр"
+            height={32}
+            width={110}
+            className="object-contain"
+            style={{ background: "transparent" }}
+            unoptimized
+            priority
+          />
+          {remaining <= 5 && remaining > 0 && !isReady && (
+            <p className="text-xs text-cb-muted">
+              {remaining <= 2 ? "Почти готово" : `Осталось уточнений: ${remaining}`}
+            </p>
+          )}
         </header>
 
         {/* Scrollable messages area */}
