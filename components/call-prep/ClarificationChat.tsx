@@ -289,22 +289,41 @@ export default function ClarificationChat({ initialDescription, onComplete, onRe
                 );
               }
 
-              // Instruction card
+              // Instruction card — styled as AI bubble
               if (msg.role === "instruction") {
                 const { organization, goal } = msg;
-                const shortGoal = goal.length > 50 ? goal.slice(0, 50) + "..." : goal;
                 return (
-                  <div key={i} className="anim-fade-up mx-2 mt-2">
-                    <div className="bg-cb-card border border-cb-dark-gray rounded-2xl p-4">
+                  <div key={i} className="flex justify-start anim-fade-up">
+                    <div className="max-w-[92%] rounded-2xl rounded-tl-sm bg-cb-dark-gray px-4 py-4">
                       <div className="text-cb-text font-semibold text-base">{organization || "Звонок"}</div>
-                      {goal && <div className="text-cb-muted text-sm mt-0.5">{goal}</div>}
-                      <div className="border-t border-cb-dark-gray my-3" />
-                      <p className="text-cb-muted text-sm leading-relaxed">
-                        Положите суфлёр рядом с телефоном с которого будете звонить.
-                        Поставьте его на громкую связь во время звонка.
-                        <br /><br />
-                        Ваша первая фраза уже готова — прочитайте её когда вам ответят.
-                      </p>
+                      {goal && <div className="text-cb-muted text-sm mt-0.5 mb-3">{goal}</div>}
+                      <div className="border-t border-cb-dark-gray mb-3" />
+                      <div className="space-y-3 text-sm">
+                        <div className="flex gap-2">
+                          <span className="text-cb-emerald font-bold min-w-[20px]">1.</span>
+                          <span className="text-cb-text">Позвоните в <strong>{organization || "организацию"}</strong> с отдельного телефона и поставьте его на <strong>громкую связь</strong>.</span>
+                        </div>
+                        <div className="flex gap-2">
+                          <span className="text-cb-emerald font-bold min-w-[20px]">2.</span>
+                          <span className="text-cb-text">Положите телефон рядом с суфлёром — он будет слышать собеседника через микрофон.</span>
+                        </div>
+                        <div className="flex gap-2">
+                          <span className="text-cb-emerald font-bold min-w-[20px]">3.</span>
+                          <span className="text-cb-text">Ваша первая фраза уже готова на следующем экране. Прочитайте её вслух когда вам ответят, затем нажмите <strong>«Я это сказал»</strong>.</span>
+                        </div>
+                        <div className="flex gap-2">
+                          <span className="text-cb-emerald font-bold min-w-[20px]">4.</span>
+                          <span className="text-cb-text">Суфлёр услышит собеседника и предложит следующую фразу. Читайте вслух — нажимайте <strong>«Я это сказал»</strong>.</span>
+                        </div>
+                        <div className="flex gap-2">
+                          <span className="text-cb-orange font-bold min-w-[20px]">💡</span>
+                          <span className="text-cb-muted">Не расслышали собеседника? Нажмите <strong className="text-cb-orange">«Не расслышал»</strong> — суфлёр даст фразу чтобы попросить повторить.</span>
+                        </div>
+                        <div className="flex gap-2">
+                          <span className="text-cb-orange font-bold min-w-[20px]">💡</span>
+                          <span className="text-cb-muted">Разговор пошёл не так? Нажмите <strong className="text-cb-orange">«Срочно завершить»</strong> — получите вежливую фразу чтобы закончить звонок.</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 );
