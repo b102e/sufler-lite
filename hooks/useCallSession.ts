@@ -30,7 +30,16 @@ export function useCallSession(sessionId: string) {
     if (!ws || ws.readyState !== WebSocket.OPEN) return;
 
     navigator.mediaDevices
-      .getUserMedia({ audio: true, video: false })
+      .getUserMedia({
+        audio: {
+          channelCount: 1,
+          sampleRate: 16000,
+          echoCancellation: false,
+          noiseSuppression: true,
+          autoGainControl: true,
+        },
+        video: false,
+      })
       .then((stream) => {
         streamRef.current = stream;
 
