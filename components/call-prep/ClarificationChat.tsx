@@ -97,7 +97,7 @@ export default function ClarificationChat({ initialDescription, onComplete, onRe
 
       // Prepend intro only on the very first AI message
       const displayMessage = messages.length === 0
-        ? `Давайте подготовимся к звонку. Я вам в этом помогу.\n\n${rawMessage}`
+        ? `Привет! Давайте подготовимся к звонку. Я вам в этом помогу.\n\n${rawMessage.replace(/^Привет!\s*/i, "")}`
         : rawMessage;
 
       setApiMessages([...messages, { role: "assistant", content: displayMessage }]);
